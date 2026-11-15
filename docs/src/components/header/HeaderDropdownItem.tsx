@@ -1,14 +1,13 @@
 import { A } from "@solidjs/router";
 import { IoChevronForward } from "solid-icons/io";
 import type { ParentProps } from "solid-js";
-import { createEffect, createSignal, For, onCleanup, onMount } from "solid-js";
+import { createSignal, For } from "solid-js";
 import type { DocIndex } from "~/utils/doc-index";
 
 interface HeaderDropdownItemProps {
   href: string;
   hasBorder?: boolean;
   onSelect: () => void;
-  onChildrenResize?: () => void;
   childrenItems?: DocIndex[];
   level?: number;
   isExpanded: boolean;
@@ -18,6 +17,7 @@ export function HeaderDropdownItem(
   props: ParentProps<HeaderDropdownItemProps>,
 ) {
   const [isExpanded, setIsExpanded] = createSignal(false);
+  const childrenVisible = () => props.isExpanded && isExpanded();
 
   const toggleOpen = (e: MouseEvent) => {
     e.preventDefault();
@@ -35,27 +35,6 @@ export function HeaderDropdownItem(
     }
     props.onSelect();
   };
-
-  let contentRef: HTMLDivElement | undefined;
-  const [maxHeightStyle, setMaxHeightStyle] = createSignal("0px");
-
-  const updateHeight = () => {
-    if (contentRef) {
-      const newHeight = isExpanded() ? contentRef.scrollHeight : 0;
-      setMaxHeightStyle(`${newHeight}px`);
-      props.onChildrenResize?.();
-    }
-  };
-
-  createEffect(updateHeight);
-
-  onMount(() => {
-    if (contentRef) {
-      const observer = new ResizeObserver(updateHeight);
-      observer.observe(contentRef);
-      onCleanup(() => observer.disconnect());
-    }
-  });
 
   return (
     <div
@@ -80,7 +59,7 @@ export function HeaderDropdownItem(
             tabindex={props.isExpanded ? 0 : -1}
           >
             <IoChevronForward
-              class="transition-transform duration-400 ease-in-out"
+              class="transition-transform duration-200 ease-in-out"
               classList={{ "rotate-90": isExpanded() }}
               size={16}
             />
@@ -89,27 +68,31 @@ export function HeaderDropdownItem(
       </A>
       {hasChildren && (
         <div
-          ref={(el) => {
-            contentRef = el;
+          class="grid overflow-hidden transition-all duration-200 ease-in-out"
+          classList={{
+            "grid-rows-[0fr]": !isExpanded(),
+            "grid-rows-[1fr]": isExpanded(),
           }}
-          class="flex flex-col pl-4 space-y-1 overflow-hidden transition-all duration-400 ease-linear"
-          style={{ "max-height": maxHeightStyle() }}
+          inert={!childrenVisible()}
         >
-          <For each={props.childrenItems}>
-            {(child) => (
-              <HeaderDropdownItem
-                href={child.path}
-                onSelect={props.onSelect}
-                childrenItems={child.children}
-                level={level + 1}
-                hasBorder={false}
-                onChildrenResize={updateHeight}
-                isExpanded={isExpanded()}
-              >
-                {child.title}
-              </HeaderDropdownItem>
-            )}
-          </For>
+          <div class="min-h-0 overflow-hidden">
+            <div class="flex flex-col pl-4 space-y-1">
+              <For each={props.childrenItems}>
+                {(child) => (
+                  <HeaderDropdownItem
+                    href={child.path}
+                    onSelect={props.onSelect}
+                    childrenItems={child.children}
+                    level={level + 1}
+                    hasBorder={false}
+                    isExpanded={childrenVisible()}
+                  >
+                    {child.title}
+                  </HeaderDropdownItem>
+                )}
+              </For>
+            </div>
+          </div>
         </div>
       )}
     </div>

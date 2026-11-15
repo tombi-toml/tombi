@@ -123,13 +123,13 @@
   width: 1rem;
   height: 1rem;
   color: rgb(255 255 255 / 60%);
-  transition: transform 400ms ease-in-out;
+  transition: transform 200ms ease-in-out;
 }
 
 .tombi-version-mobile-panel {
   overflow: hidden;
   padding-left: 1rem;
-  transition: max-height 400ms linear;
+  transition: max-height 200ms linear;
 }
 
 .tombi-version-mobile-panel .tombi-version-option {

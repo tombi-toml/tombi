@@ -42,6 +42,7 @@ mobile.id = "archive-mobile";
 mobile.hidden = true;
 mobile.classList.remove("max-h-0");
 mobile.style.maxHeight = "calc(100vh - 5rem)";
+if (mobile.classList.contains("grid")) mobile.style.gridTemplateRows = "1fr";
 mobile.setAttribute("aria-label", "Site navigation");
 for (const control of mobile.querySelectorAll("a,button")) control.tabIndex = 0;
 mobile.addEventListener("click", (event) => {
@@ -55,9 +56,13 @@ mobile.addEventListener("click", (event) => {
     expanded ? "Collapse section" : "Expand section",
   );
   button.querySelector("svg")?.classList.toggle("rotate-90", expanded);
-  button.closest("a").nextElementSibling.style.maxHeight = expanded
-    ? "none"
-    : "0px";
+  const panel = button.closest("a").nextElementSibling;
+  if (panel.classList.contains("grid")) {
+    panel.style.gridTemplateRows = expanded ? "1fr" : "0fr";
+    panel.inert = !expanded;
+  } else {
+    panel.style.maxHeight = expanded ? "none" : "0px";
+  }
 });
 const mobileLogo = document.querySelector("#mobile-logo");
 mobileLogo.setAttribute("aria-expanded", "false");
