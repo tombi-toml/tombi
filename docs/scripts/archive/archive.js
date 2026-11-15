@@ -74,6 +74,9 @@ mobileLogo.addEventListener("click", (event) => {
 });
 document.querySelector("#dark-mode-toggle")?.addEventListener("click", () => {
   const dark = document.documentElement.classList.toggle("dark");
+  document
+    .querySelector(".archive-playground-frame")
+    ?.contentDocument?.documentElement?.classList.toggle("dark", dark);
   try {
     localStorage.setItem("theme", dark ? "dark" : "light");
   } catch {}

@@ -6,6 +6,37 @@ import { JSDOM } from "jsdom";
 
 const source = await readFile(new URL("./archive.js", import.meta.url), "utf8");
 
+for (const frameState of ["loaded", "unloaded", "absent"]) {
+  test(`archived theme toggle supports playground iframe state: ${frameState}`, async () => {
+    const shell = '<header><a id="mobile-logo"></a><button id="dark-mode-toggle"></button><input><div class="header-dropdown"></div></header>';
+    const dom = new JSDOM(`<meta name="tombi-archive-base" content="/v1"><div id="archive-header"></div>${frameState === "absent" ? "" : '<iframe class="archive-playground-frame"></iframe>'}`, { url: "https://example.com/v1/playground" });
+    const document = dom.window.document;
+    const frame = document.querySelector("iframe");
+    if (frameState === "unloaded") {
+      Object.defineProperty(frame, "contentDocument", { value: null });
+    }
+    const frameRoot = frame?.contentDocument?.documentElement;
+    await runInNewContext(`(async () => {${source}\n})()`, {
+      document,
+      location: dom.window.location,
+      localStorage: dom.window.localStorage,
+      fetch: async () => ({
+        ok: true,
+        text: async () => shell,
+        json: async () => [],
+      }),
+    });
+
+    for (const dark of [true, false]) {
+      document.querySelector("#dark-mode-toggle").click();
+      assert.equal(document.documentElement.classList.contains("dark"), dark);
+      assert.equal(dom.window.localStorage.getItem("theme"), dark ? "dark" : "light");
+      if (frameRoot) assert.equal(frameRoot.classList.contains("dark"), dark);
+    }
+    dom.window.close();
+  });
+}
+
 for (const layout of ["max-height", "grid"]) {
   test(`archived mobile navigation supports ${layout} shells`, async () => {
     const grid = layout === "grid";
