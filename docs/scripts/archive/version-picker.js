@@ -114,7 +114,12 @@
     mobileTrigger.className = "tombi-version-mobile-trigger";
     mobileTrigger.setAttribute("aria-expanded", "false");
     mobileTrigger.setAttribute("aria-label", `Version ${currentVersion}. Choose version`);
-    mobileTrigger.innerHTML = `<strong>${currentVersion}</strong><span aria-hidden="true">›</span>`;
+    mobileTrigger.innerHTML = `<span>${currentVersion}</span>`;
+    const chevron = mobileNav.querySelector("a button svg")?.cloneNode(true);
+    if (chevron) {
+      chevron.setAttribute("aria-hidden", "true");
+      mobileTrigger.append(chevron);
+    }
     const panel = document.createElement("div");
     panel.className = "tombi-version-mobile-panel";
     panel.hidden = true;
@@ -126,6 +131,7 @@
       event.stopPropagation();
       panel.hidden = true;
       mobileTrigger.setAttribute("aria-expanded", "false");
+      chevron?.classList.remove("rotate-90");
     });
     panel.append(back);
     list.forEach((version) => panel.append(option(version)));
@@ -133,6 +139,7 @@
       event.stopPropagation();
       panel.hidden = false;
       mobileTrigger.setAttribute("aria-expanded", "true");
+      chevron?.classList.add("rotate-90");
     });
     mobile.append(mobileTrigger, panel);
     mobileNav.prepend(mobile);

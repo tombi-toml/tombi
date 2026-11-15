@@ -8,7 +8,7 @@ const source = await readFile(new URL("./version-picker.js", import.meta.url), "
 
 async function setup(pathname, hash, pages) {
   const dom = new JSDOM(
-    '<header><div class="menu-toggle"></div><div class="header-dropdown"><nav><a>Home</a></nav></div></header>',
+    '<header><div class="menu-toggle"></div><div class="header-dropdown"><nav><a>Home</a><a>Docs<button aria-label="Expand section"><svg viewBox="0 0 24 24"></svg></button></a></nav></div></header>',
   );
   let assigned;
   const location = {
@@ -95,8 +95,10 @@ test("missing section opens the top of the matching page from the mobile menu", 
   const mobile = page.document.querySelector(".header-dropdown nav");
   assert.equal(mobile.firstElementChild.className, "tombi-version-mobile");
   const mobileTrigger = mobile.querySelector(".tombi-version-mobile-trigger");
-  assert.equal(mobileTrigger.textContent.trim(), "main›");
+  assert.equal(mobileTrigger.textContent.trim(), "main");
+  assert.ok(mobileTrigger.querySelector("svg"));
   mobileTrigger.click();
+  assert.ok(mobileTrigger.querySelector("svg").classList.contains("rotate-90"));
   assert.equal(mobile.querySelector(".tombi-version-mobile-panel").hidden, false);
   mobile.querySelectorAll(".tombi-version-mobile-panel .tombi-version-option")[1].click();
   await new Promise((resolve) => setTimeout(resolve, 0));

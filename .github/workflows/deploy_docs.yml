@@ -170,7 +170,7 @@ jobs:
               cp -a docs/.output/public/_build docs/.output/public/playground pages/common/v1/
               cp docs/.output/public/{playground-worker.js,icon.svg,tombi-transparent.svg,favicon.ico,ogp.png} pages/common/v1/
             fi
-            cp -n docs/scripts/archive/version-picker.js pages/common/v1/
+            cp docs/scripts/archive/version-picker.js pages/common/v1/
             cp docs/scripts/archive/version-picker.css pages/common/v1/
           else
             test -f pages/common/v1/playground/index.html
