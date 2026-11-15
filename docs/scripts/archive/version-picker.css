@@ -158,6 +158,8 @@
   display: flex;
   align-items: center;
   justify-content: space-evenly;
+  position: relative;
+  left: 0.5rem;
   padding: 0;
 }
 
