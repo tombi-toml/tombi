@@ -117,6 +117,8 @@
     mobileTrigger.innerHTML = `<span>${currentVersion}</span>`;
     const chevron = mobileNav.querySelector("a button svg")?.cloneNode(true);
     if (chevron) {
+      chevron.removeAttribute("data-hk");
+      chevron.classList.remove("rotate-90");
       chevron.setAttribute("aria-hidden", "true");
       const chevronBox = document.createElement("span");
       chevronBox.className = "tombi-version-mobile-chevron";
