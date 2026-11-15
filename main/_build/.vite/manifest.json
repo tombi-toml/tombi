@@ -136,17 +136,6 @@
       "_web-DCz9_uPG.js"
     ]
   },
-  "_index-B65jS48Z.js": {
-    "file": "assets/index-B65jS48Z.js",
-    "name": "index",
-    "imports": [
-      "_web-DCz9_uPG.js",
-      "_components-b5RolwDv.js",
-      "_index-CcAEBGL_.js",
-      "_index-Dhcltlfs.js",
-      "_platform-CPzJTEFe.js"
-    ]
-  },
   "_index-CXKsyjYN.js": {
     "file": "assets/index-CXKsyjYN.js",
     "name": "index",
@@ -159,6 +148,17 @@
     "name": "index",
     "imports": [
       "_index-7xQSF2zI.js"
+    ]
+  },
+  "_index-DZHmmBfV.js": {
+    "file": "assets/index-DZHmmBfV.js",
+    "name": "index",
+    "imports": [
+      "_web-DCz9_uPG.js",
+      "_components-b5RolwDv.js",
+      "_index-CcAEBGL_.js",
+      "_index-Dhcltlfs.js",
+      "_platform-CPzJTEFe.js"
     ]
   },
   "_index-Dhcltlfs.js": {
@@ -831,14 +831,14 @@
     ]
   },
   "src/routes/layout.tsx?pick=default&pick=$css": {
-    "file": "assets/layout-8ZoBR1UB.js",
+    "file": "assets/layout-BvGUTkqp.js",
     "name": "layout",
     "src": "src/routes/layout.tsx?pick=default&pick=$css",
     "isEntry": true,
     "isDynamicEntry": true,
     "imports": [
       "_web-DCz9_uPG.js",
-      "_index-B65jS48Z.js",
+      "_index-DZHmmBfV.js",
       "_components-b5RolwDv.js",
       "_index-CcAEBGL_.js",
       "_index-7xQSF2zI.js",
@@ -872,7 +872,7 @@
     ]
   },
   "virtual:$vinxi/handler/client": {
-    "file": "assets/client-_77hbTZ-.js",
+    "file": "assets/client-DbsFgKRk.js",
     "name": "client",
     "src": "virtual:$vinxi/handler/client",
     "isEntry": true,
@@ -881,7 +881,7 @@
       "_PageHeading-Ckngk6DM.js",
       "_preload-helper-TXE1L53l.js",
       "_index-6OQr06v0.js",
-      "_index-B65jS48Z.js",
+      "_index-DZHmmBfV.js",
       "_CodeBlock-DcLPlfzH.js",
       "_Highlight-CMhf5ZLw.js",
       "_Table-CZPHGeGB.js",
@@ -950,7 +950,7 @@
       "src/routes/playground/index.tsx?pick=default&pick=$css"
     ],
     "css": [
-      "assets/client-DzCODLY9.css"
+      "assets/client-DkmUnIku.css"
     ]
   }
 }
