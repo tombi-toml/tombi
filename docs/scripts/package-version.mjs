@@ -214,7 +214,7 @@ const search = [];
 for (const { path, route, document, article } of pages) {
   const isDocs = route === "docs" || route.startsWith("docs/");
   if (route === "playground") {
-    article.innerHTML = `<div class="p-4 mdx-content"><h1>Playground</h1><p>The interactive playground runs the latest main build. Archived documentation remains pinned to ${version}.</p><p><a href="/tombi/main/playground">Open the main Playground</a></p></div>`;
+    article.innerHTML = `<iframe class="archive-playground-frame" title="Tombi Playground ${version}" src="/tombi/main/playground/?runtime=${version}&amp;embedded=1" allow="clipboard-write"></iframe>`;
   }
   if (isDocs)
     search.push({

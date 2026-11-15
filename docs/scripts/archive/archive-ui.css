@@ -54,6 +54,13 @@
 [data-tabs] button[aria-selected="false"] {
   color: #6b7280;
 }
+.archive-playground-frame {
+  display: block;
+  width: 100%;
+  height: calc(100vh - 7rem);
+  min-height: 38rem;
+  border: 0;
+}
 .code-block-wrapper .c {
   color: #6a9955;
 }

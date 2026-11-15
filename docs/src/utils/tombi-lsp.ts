@@ -110,11 +110,12 @@ export class TombiLspClient {
     });
   }
 
-  static async create(): Promise<TombiLspClient> {
+  static async create(version: string): Promise<TombiLspClient> {
     const workerUrl = new URL(
-      `${baseUrl()}wasm/worker.js`,
+      `${baseUrl()}playground-worker.js`,
       window.location.origin,
     );
+    workerUrl.searchParams.set("version", version);
     const client = new TombiLspClient(
       new Worker(workerUrl, { name: "tombi-lsp", type: "module" }),
     );
