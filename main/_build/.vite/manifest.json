@@ -54,12 +54,12 @@
     "src": "../node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/editor.worker.js?worker&inline",
     "isDynamicEntry": true
   },
-  "_CodeBlock-024m4hhC.js": {
-    "file": "assets/CodeBlock-024m4hhC.js",
+  "_CodeBlock-DcLPlfzH.js": {
+    "file": "assets/CodeBlock-DcLPlfzH.js",
     "name": "CodeBlock",
     "imports": [
       "_web-DCz9_uPG.js",
-      "_index-BmOTOmcF.js"
+      "_index-Dhcltlfs.js"
     ]
   },
   "_CodeTabsContext-Bq8doJbE.js": {
@@ -122,6 +122,17 @@
       "assets/editOperation-CXyCNZc1.css"
     ]
   },
+  "_index-0uAL9oPI.js": {
+    "file": "assets/index-0uAL9oPI.js",
+    "name": "index",
+    "imports": [
+      "_web-DCz9_uPG.js",
+      "_components-b5RolwDv.js",
+      "_index-CcAEBGL_.js",
+      "_index-Dhcltlfs.js",
+      "_platform-CPzJTEFe.js"
+    ]
+  },
   "_index-6OQr06v0.js": {
     "file": "assets/index-6OQr06v0.js",
     "name": "index",
@@ -136,24 +147,6 @@
       "_web-DCz9_uPG.js"
     ]
   },
-  "_index-9q_tdOoO.js": {
-    "file": "assets/index-9q_tdOoO.js",
-    "name": "index",
-    "imports": [
-      "_web-DCz9_uPG.js",
-      "_components-b5RolwDv.js",
-      "_index-CcAEBGL_.js",
-      "_index-BmOTOmcF.js",
-      "_platform-CPzJTEFe.js"
-    ]
-  },
-  "_index-BmOTOmcF.js": {
-    "file": "assets/index-BmOTOmcF.js",
-    "name": "index",
-    "imports": [
-      "_index-7xQSF2zI.js"
-    ]
-  },
   "_index-CXKsyjYN.js": {
     "file": "assets/index-CXKsyjYN.js",
     "name": "index",
@@ -163,6 +156,13 @@
   },
   "_index-CcAEBGL_.js": {
     "file": "assets/index-CcAEBGL_.js",
+    "name": "index",
+    "imports": [
+      "_index-7xQSF2zI.js"
+    ]
+  },
+  "_index-Dhcltlfs.js": {
+    "file": "assets/index-Dhcltlfs.js",
     "name": "index",
     "imports": [
       "_index-7xQSF2zI.js"
@@ -564,7 +564,7 @@
     ]
   },
   "src/routes/docs/installation.mdx?pick=$css": {
-    "file": "assets/installation-eF_Vu2b5.js",
+    "file": "assets/installation-CyByHF2u.js",
     "name": "installation",
     "src": "src/routes/docs/installation.mdx?pick=$css",
     "isEntry": true,
@@ -572,9 +572,9 @@
     "imports": [
       "_index-6OQr06v0.js",
       "_web-DCz9_uPG.js",
-      "_CodeBlock-024m4hhC.js",
+      "_CodeBlock-DcLPlfzH.js",
       "_CodeTabsContext-Bq8doJbE.js",
-      "_index-BmOTOmcF.js",
+      "_index-Dhcltlfs.js",
       "_index-7xQSF2zI.js"
     ]
   },
@@ -816,7 +816,7 @@
     ]
   },
   "src/routes/index.tsx?pick=default&pick=$css": {
-    "file": "assets/index-dFxrDg91.js",
+    "file": "assets/index-B6KPxs-c.js",
     "name": "index",
     "src": "src/routes/index.tsx?pick=default&pick=$css",
     "isEntry": true,
@@ -824,30 +824,30 @@
     "imports": [
       "_web-DCz9_uPG.js",
       "_index-CXKsyjYN.js",
-      "_index-BmOTOmcF.js",
+      "_index-Dhcltlfs.js",
       "_components-b5RolwDv.js",
       "_PageHeading-Ckngk6DM.js",
       "_index-7xQSF2zI.js"
     ]
   },
   "src/routes/layout.tsx?pick=default&pick=$css": {
-    "file": "assets/layout-rDGNHrTe.js",
+    "file": "assets/layout-CHeyMbBf.js",
     "name": "layout",
     "src": "src/routes/layout.tsx?pick=default&pick=$css",
     "isEntry": true,
     "isDynamicEntry": true,
     "imports": [
       "_web-DCz9_uPG.js",
-      "_index-9q_tdOoO.js",
+      "_index-0uAL9oPI.js",
       "_components-b5RolwDv.js",
       "_index-CcAEBGL_.js",
       "_index-7xQSF2zI.js",
-      "_index-BmOTOmcF.js",
+      "_index-Dhcltlfs.js",
       "_platform-CPzJTEFe.js"
     ]
   },
   "src/routes/playground/index.tsx?pick=default&pick=$css": {
-    "file": "assets/index-C5tlCI17.js",
+    "file": "assets/index-5nxbaNAF.js",
     "name": "index",
     "src": "src/routes/playground/index.tsx?pick=default&pick=$css",
     "isEntry": true,
@@ -855,7 +855,7 @@
     "imports": [
       "_web-DCz9_uPG.js",
       "_index-CXKsyjYN.js",
-      "_index-BmOTOmcF.js",
+      "_index-Dhcltlfs.js",
       "_PageHeading-Ckngk6DM.js",
       "_preload-helper-TXE1L53l.js",
       "_platform-CPzJTEFe.js",
@@ -872,7 +872,7 @@
     ]
   },
   "virtual:$vinxi/handler/client": {
-    "file": "assets/client-DIMflRUP.js",
+    "file": "assets/client-Y6A4ZYCp.js",
     "name": "client",
     "src": "virtual:$vinxi/handler/client",
     "isEntry": true,
@@ -881,15 +881,15 @@
       "_PageHeading-Ckngk6DM.js",
       "_preload-helper-TXE1L53l.js",
       "_index-6OQr06v0.js",
-      "_index-9q_tdOoO.js",
-      "_CodeBlock-024m4hhC.js",
+      "_index-0uAL9oPI.js",
+      "_CodeBlock-DcLPlfzH.js",
       "_Highlight-CMhf5ZLw.js",
       "_Table-CZPHGeGB.js",
       "_components-b5RolwDv.js",
       "_HttpStatusCode-DjTx85av.js",
       "_index-CcAEBGL_.js",
       "_index-7xQSF2zI.js",
-      "_index-BmOTOmcF.js",
+      "_index-Dhcltlfs.js",
       "_platform-CPzJTEFe.js"
     ],
     "dynamicImports": [
@@ -950,7 +950,7 @@
       "src/routes/playground/index.tsx?pick=default&pick=$css"
     ],
     "css": [
-      "assets/client-JaF8oLye.css"
+      "assets/client-CSLWR_S9.css"
     ]
   }
 }
