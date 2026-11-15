@@ -111,6 +111,26 @@ jobs:
         env:
           BASE_URL: /tombi/${{ steps.version.outputs.name }}
 
+      - name: Wait for release WASM
+        if: steps.version.outputs.name != 'main'
+        env:
+          SITE_VERSION: ${{ steps.version.outputs.name }}
+        run: |
+          set -euo pipefail
+          version="${SITE_VERSION#v}"
+          package="https://cdn.jsdelivr.net/npm/@tombi-toml/wasm-lsp@${version}/dist"
+          for ((attempt = 0; attempt < 40; attempt++)); do
+            if npm view "@tombi-toml/wasm-lsp@${version}" version > /dev/null 2>&1 &&
+              curl -fsSI "${package}/worker.js" > /dev/null &&
+              curl -fsSI "${package}/tombi_lsp_wasm.js" > /dev/null &&
+              curl -fsSI "${package}/tombi_lsp_wasm_bg.wasm" > /dev/null; then
+              exit 0
+            fi
+            sleep 30
+          done
+          echo "Release WASM ${version} is not available on npm CDN" >&2
+          exit 1
+
       - name: Prepare versioned site
         env:
           SITE_VERSION: ${{ steps.version.outputs.name }}
