@@ -54,6 +54,27 @@
 [data-tabs] button[aria-selected="false"] {
   color: #6b7280;
 }
+.code-block-wrapper .c {
+  color: #6a9955;
+}
+.code-block-wrapper .s {
+  color: #ce9178;
+}
+.code-block-wrapper .n {
+  color: #b5cea8;
+}
+.code-block-wrapper .p {
+  color: #9cdcfe;
+}
+.code-block-wrapper .k {
+  color: #569cd6;
+}
+.code-block-wrapper .f {
+  color: #dcdcaa;
+}
+.code-block-wrapper .t {
+  color: #4ec9b0;
+}
 @media (max-width: 767px) {
   header.archive-search-open nav > div > div:has(input),
   header.archive-search-open div:has(> input) {

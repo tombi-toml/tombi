@@ -15,6 +15,10 @@ const require = createRequire(
 const { JSDOM } = require("jsdom");
 const Prism = require("prismjs");
 require("prismjs/components/prism-bash.js");
+require("prismjs/components/prism-toml.js");
+require("prismjs/components/prism-json.js");
+require("prismjs/components/prism-typescript.js");
+require("prismjs/components/prism-python.js");
 require("prismjs/components/prism-powershell.js");
 
 const [input, output, version] = process.argv.slice(2);
@@ -83,14 +87,15 @@ function archiveTabs(document) {
         `button[data-key="${tab.key}"] > div`,
       );
       const code = panel.querySelector("code");
-      const grammar = Prism.languages[tab.language || language];
-      if (grammar)
-        code.innerHTML = Prism.highlight(
-          tab.command,
-          grammar,
-          tab.language || language,
-        );
-      else code.textContent = tab.command;
+      const panelLanguage = tab.language || language;
+      code.classList.replace(
+        `language-${language}`,
+        `language-${panelLanguage}`,
+      );
+      panel
+        .querySelector("pre")
+        .classList.replace(`language-${language}`, `language-${panelLanguage}`);
+      code.textContent = tab.command;
       container.append(panel);
     }
     original.remove();
@@ -115,6 +120,33 @@ function archiveTabs(document) {
     image.remove();
     container.removeAttribute("data-archive-image-tabs");
     container.dataset.tabs = "image";
+  }
+}
+const tokenColors = [
+  ["c", ["comment"]],
+  ["s", ["string", "builtin"]],
+  ["n", ["number"]],
+  ["p", ["property", "variable", "parameter", "constant", "interpolation"]],
+  ["k", ["keyword", "boolean", "important", "interpolation-punctuation"]],
+  ["f", ["function"]],
+  ["t", ["table", "class-name"]],
+];
+function highlightCodeBlocks(document) {
+  for (const code of document.querySelectorAll("pre > code")) {
+    const language = [...code.classList]
+      .find((name) => name.startsWith("language-"))
+      ?.slice("language-".length);
+    const grammar = Prism.languages[language];
+    if (!grammar) continue;
+    code.innerHTML = Prism.highlight(code.textContent, grammar, language);
+    // Release pages store short color classes to stay within the byte budget.
+    for (const token of code.querySelectorAll("span.token")) {
+      const color = tokenColors.find(([, names]) =>
+        names.some((name) => token.classList.contains(name)),
+      )?.[0];
+      if (color) token.className = color;
+      else token.replaceWith(...token.childNodes);
+    }
   }
 }
 await rm(output, { recursive: true, force: true });
@@ -150,6 +182,7 @@ for (const path of sourceFiles.filter(
   if (!document.querySelector(`link[href^="${base}/_build/"]`))
     throw new Error(`Unexpected build base URL in ${path}`);
   archiveTabs(document);
+  highlightCodeBlocks(document);
   for (const button of document.querySelectorAll("button[data-key]")) {
     if (!button.closest("[data-tabs]") && !button.querySelector("div")) {
       button.disabled = true;
