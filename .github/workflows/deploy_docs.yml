@@ -127,7 +127,14 @@ jobs:
 
           rm -rf "pages/${SITE_VERSION}"
           mkdir "pages/${SITE_VERSION}"
-          cp -a docs/.output/public/. "pages/${SITE_VERSION}/"
+          if [ "${SITE_VERSION}" = "main" ]; then
+            cp -a docs/.output/public/. "pages/${SITE_VERSION}/"
+          else
+            # Historical tags use the packager maintained by the main workflow.
+            git archive "${main_sha}" docs/scripts/archive docs/scripts/package-version.mjs | tar -x
+            npm install --prefix docs/scripts/archive --ignore-scripts --package-lock=false --no-audit --no-fund
+            node docs/scripts/package-version.mjs docs/.output/public "pages/${SITE_VERSION}" "${SITE_VERSION}"
+          fi
           git show "${main_sha}:.github/pages/index.html" > pages/index.html
           git show "${main_sha}:.github/pages/404.html" > pages/404.html
           touch pages/.nojekyll

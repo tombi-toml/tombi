@@ -35,7 +35,7 @@ export default function CodeTabs(props: CodeTabsProps) {
   };
 
   return (
-    <div>
+    <div data-archive-code-tabs={JSON.stringify(props.tabs)}>
       <For each={props.tabs}>
         {(tab) => (
           <button
