@@ -5,6 +5,7 @@ import type { DocIndex } from "~/utils/doc-index";
 import docIndex from "../../../doc-index.json";
 import { HeaderDropdownItem } from "./HeaderDropdownItem";
 import { HeaderSocialLinks } from "./HeaderSocialLinks";
+import { HeaderThemeToggle } from "./HeaderThemeToggle";
 
 interface HeaderDropdownProps {
   isExpanded: Accessor<boolean>;
@@ -69,7 +70,8 @@ export function HeaderDropdown(props: HeaderDropdownProps) {
             </HeaderDropdownItem>
           )}
         </For>
-        <div class="tombi-mobile-social-links flex items-center justify-evenly py-2 md:hidden">
+        <div class="tombi-mobile-social-links flex items-center justify-evenly md:hidden">
+          <HeaderThemeToggle mobile />
           <HeaderSocialLinks mobile />
         </div>
       </nav>

@@ -6,17 +6,26 @@ import { JSDOM } from "jsdom";
 
 const source = await readFile(new URL("./version-picker.js", import.meta.url), "utf8");
 
-async function setup(pathname, hash, pages, { docsExpanded = false, existingFooter = false, hydrated = true } = {}) {
+async function setup(pathname, hash, pages, { docsExpanded = false, existingFooter = false, hydrated = true, archived = false } = {}) {
   const dom = new JSDOM(
-    '<header><div class="menu-toggle"></div><nav><a href="https://x.com/tombi_toml" target="_blank" aria-label="X (Twitter)" class="hidden sm:block w-6 h-6"><svg data-hk="x-icon"></svg></a><a href="https://github.com/tombi-toml/tombi" target="_blank" aria-label="GitHub" class="hidden sm:block w-6 h-6"><svg data-hk="github-icon"></svg></a></nav><div class="header-dropdown"><nav><a>Home</a><a>Docs<button aria-label="Expand section"><svg data-hk="docs-chevron" viewBox="0 0 24 24"></svg></button></a><a>Playground</a></nav></div></header>',
+    '<header><div class="menu-toggle"></div><nav><button id="dark-mode-toggle" class="hidden sm:flex" aria-label="Toggle dark mode"><svg class="icon-tabler-sun-filled" data-hk="theme-icon"></svg></button><a href="https://x.com/tombi_toml" target="_blank" aria-label="X (Twitter)" class="hidden sm:block w-6 h-6"><svg data-hk="x-icon"></svg></a><a href="https://github.com/tombi-toml/tombi" target="_blank" aria-label="GitHub" class="hidden sm:block w-6 h-6"><svg data-hk="github-icon"></svg></a></nav><div class="header-dropdown"><nav><a>Home</a><a>Docs<button aria-label="Expand section"><svg data-hk="docs-chevron" viewBox="0 0 24 24"></svg></button></a><a>Playground</a></nav></div></header>',
   );
+  dom.window.document.querySelector("#dark-mode-toggle").addEventListener("click", () => {
+    dom.window.document.documentElement.classList.toggle("dark");
+  });
   if (docsExpanded) {
     dom.window.document.querySelector(".header-dropdown nav a button svg").classList.add("rotate-90");
   }
   if (existingFooter) {
     const footer = dom.window.document.createElement("div");
     footer.className = "tombi-mobile-social-links";
+    footer.innerHTML = '<button aria-label="Toggle dark mode"><svg class="icon-tabler-sun-filled"></svg></button>';
     dom.window.document.querySelector(".header-dropdown nav").append(footer);
+  }
+  if (archived) {
+    const meta = dom.window.document.createElement("meta");
+    meta.name = "tombi-archive-base";
+    dom.window.document.head.append(meta);
   }
   if (hydrated) dom.window.document.documentElement.dataset.tombiHydrated = "true";
   let assigned;
@@ -137,12 +146,27 @@ test("mobile version arrow starts closed independently of an open Docs section",
   assert.ok(!versionArrow.classList.contains("rotate-90"));
 });
 
-test("mobile menu ends with visible copies of the header social links", async () => {
+test("mobile menu ends with visible theme and social controls", async () => {
   const page = await setup("/tombi/main/docs/", "", {});
   const nav = page.document.querySelector(".header-dropdown nav");
   const footer = nav.lastElementChild;
   assert.equal(footer.className, "tombi-mobile-social-links");
   assert.equal(footer.previousElementSibling.textContent, "Playground");
+  const themeButton = footer.querySelector("button");
+  assert.equal(themeButton.getAttribute("aria-label"), "Toggle dark mode");
+  assert.ok(themeButton.classList.contains("tombi-mobile-social-link"));
+  assert.ok(!themeButton.classList.contains("hidden"));
+  assert.equal(themeButton.id, "");
+  assert.equal(themeButton.querySelector("[data-hk]"), null);
+  assert.ok(themeButton.querySelector("svg").classList.contains("icon-tabler-sun-filled"));
+  themeButton.click();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.ok(page.document.documentElement.classList.contains("dark"));
+  assert.ok(themeButton.querySelector("svg").classList.contains("icon-tabler-moon-filled"));
+  themeButton.click();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.ok(!page.document.documentElement.classList.contains("dark"));
+  assert.ok(themeButton.querySelector("svg").classList.contains("icon-tabler-sun-filled"));
   const links = [...footer.querySelectorAll("a")];
   assert.deepEqual(links.map((link) => link.getAttribute("aria-label")), ["X (Twitter)", "GitHub"]);
   assert.deepEqual(links.map((link) => link.href), [
@@ -160,6 +184,16 @@ test("mobile menu ends with visible copies of the header social links", async ()
 test("main menu keeps its source-rendered social row", async () => {
   const page = await setup("/tombi/main/docs/", "", {}, { existingFooter: true });
   assert.equal(page.document.querySelectorAll(".tombi-mobile-social-links").length, 1);
+});
+
+test("archived source-rendered mobile theme button remains interactive", async () => {
+  const page = await setup("/tombi/v1.12.0/docs/", "", {}, { existingFooter: true, archived: true });
+  const themeButton = page.document.querySelector('.tombi-mobile-social-links button[aria-label="Toggle dark mode"]');
+  assert.equal(page.document.querySelectorAll(".tombi-mobile-social-links").length, 1);
+  themeButton.click();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.ok(page.document.documentElement.classList.contains("dark"));
+  assert.ok(themeButton.querySelector("svg").classList.contains("icon-tabler-moon-filled"));
 });
 
 test("main menu is not changed until hydration completes", async () => {

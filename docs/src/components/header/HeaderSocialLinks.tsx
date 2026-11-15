@@ -3,8 +3,8 @@ import { LinkIconButton } from "../button/LinkIconButton";
 
 export function HeaderSocialLinks(props: { mobile?: boolean }) {
   const linkClass = props.mobile
-    ? "tombi-mobile-social-link flex items-center justify-center w-12 h-12"
-    : "hidden sm:block w-6 h-6";
+    ? "tombi-mobile-social-link flex items-center justify-center w-[2.8rem] h-[2.8rem]"
+    : "hidden md:block w-6 h-6";
 
   return (
     <>
