@@ -40,6 +40,7 @@ jobs:
             .cargo/**
             .github/actions/relevant-changes/**
             .github/actions/set-version/**
+            .github/actions/versioned-readme/**
             .github/scripts/install-cross.sh
             mise.toml
             package.json
@@ -228,6 +229,8 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - uses: $/.github/actions/versioned-readme
 
       - name: Build WASM packages
         run: |

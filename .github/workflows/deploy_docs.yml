@@ -3,10 +3,16 @@ name: Deploy Docs to GitHub Pages
 on:
   push:
     branches: ["main"]
+    tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Release tag to rebuild (leave empty for main)"
+        required: false
+        type: string
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -15,6 +21,18 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  dispatch-tag:
+    if: github.event_name == 'push' && github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Build release docs from main workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: gh workflow run deploy_docs.yml --ref main --field version="${RELEASE_TAG}"
+
   detect-changes:
     runs-on: ubuntu-latest
     outputs:
@@ -26,6 +44,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - id: filter
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: $/.github/actions/relevant-changes
         with:
           base-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
@@ -39,6 +58,7 @@ jobs:
             typescript/@tombi-toml/wasm-lib/**
             typescript/@tombi-toml/wasm-lsp/**
             .github/actions/relevant-changes/**
+            .github/pages/**
             mise.toml
             .npmrc
             Cargo.toml
@@ -49,7 +69,7 @@ jobs:
 
   deploy:
     needs: detect-changes
-    if: needs.detect-changes.outputs.relevant == 'true'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.relevant == 'true')
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -58,7 +78,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7.0.1
         with:
-          persist-credentials: false
+          ref: ${{ inputs.version || github.sha }}
+          persist-credentials: true
+      - name: Select site version
+        id: version
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          version="${REQUESTED_VERSION:-main}"
+          if [ "${version}" != "main" ] && ! [[ "${version}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Invalid release tag: ${version}" >&2
+            exit 1
+          fi
+          echo "name=${version}" >> "$GITHUB_OUTPUT"
       - uses: jdx/mise-action@v5.0.0
         with:
           install_args: "node pnpm rust"
@@ -76,7 +109,45 @@ jobs:
         working-directory: ./docs
         run: pnpm run build
         env:
-          BASE_URL: /tombi
+          BASE_URL: /tombi/${{ steps.version.outputs.name }}
+
+      - name: Prepare versioned site
+        env:
+          SITE_VERSION: ${{ steps.version.outputs.name }}
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          main_sha="$(git rev-parse FETCH_HEAD)"
+          if git ls-remote --exit-code --heads origin gh-pages > /dev/null; then
+            git fetch origin gh-pages
+            git worktree add --detach pages FETCH_HEAD
+          else
+            git worktree add --orphan -b gh-pages pages
+          fi
+
+          rm -rf "pages/${SITE_VERSION}"
+          mkdir "pages/${SITE_VERSION}"
+          cp -a docs/.output/public/. "pages/${SITE_VERSION}/"
+          git show "${main_sha}:.github/pages/index.html" > pages/index.html
+          git show "${main_sha}:.github/pages/404.html" > pages/404.html
+          touch pages/.nojekyll
+          if [ "${SITE_VERSION}" = "main" ]; then
+            cp docs/public/install.sh docs/public/install.ps1 pages/
+            if [ "$(git rev-parse HEAD)" != "${main_sha}" ]; then
+              echo "A newer main commit exists; refusing to deploy stale docs." >&2
+              exit 1
+            fi
+          fi
+
+          git -C pages config user.name "github-actions[bot]"
+          git -C pages config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C pages add -A
+          if ! git -C pages diff --cached --quiet; then
+            git -C pages commit -m "docs: deploy ${SITE_VERSION}"
+            git -C pages push origin HEAD:gh-pages
+          fi
+          mkdir site
+          rsync -a --exclude=.git pages/ site/
 
       - name: Setup Pages
         uses: actions/configure-pages@v4.0.0
@@ -84,7 +155,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3.0.1
         with:
-          path: "./docs/.output/public"
+          path: "./site"
 
       - name: Deploy to GitHub Pages
         id: deployment

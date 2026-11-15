@@ -50,6 +50,7 @@ jobs:
             .github/actions/generate-winget-manifest/**
             .github/actions/relevant-changes/**
             .github/actions/set-version/**
+            .github/actions/versioned-readme/**
             .github/actions/submit-winget-manifest/**
             .github/scripts/install-cross.sh
             mise.toml
@@ -146,6 +147,8 @@ jobs:
       - run: which pnpm
 
       - uses: $/.github/actions/set-version
+
+      - uses: $/.github/actions/versioned-readme
 
       - name: Run xtask dist
         run: cargo xtask dist

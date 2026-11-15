@@ -23,7 +23,6 @@ import {
   Show,
 } from "solid-js";
 import { PageHeading } from "~/components/PageHeading";
-import { DEFAULT_URL } from "~/remark/page-heading";
 import { loadMonacoEditor, type Monaco } from "~/utils/monaco-editor";
 import { detectOperatingSystem } from "~/utils/platform";
 import { registerTombiLspProviders } from "~/utils/tombi-monaco";
@@ -34,6 +33,7 @@ import {
 } from "~/utils/tombi-lsp";
 import "~/styles/playground.css";
 
+const DEFAULT_URL = `https://tombi-toml.github.io${import.meta.env.SERVER_BASE_URL || "/tombi/main"}/`;
 const DEFAULT_PATH = "tombi.toml";
 const WORKSPACE_STORAGE_KEY = "tombi-playground-workspace-v1";
 let isInitialWorkspaceMount = true;

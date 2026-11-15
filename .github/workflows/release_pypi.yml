@@ -42,6 +42,7 @@ jobs:
             .github/actions/dispatch-versioned-release/**
             .github/actions/relevant-changes/**
             .github/actions/set-version/**
+            .github/actions/versioned-readme/**
             mise.toml
             Cargo.toml
             Cargo.lock
@@ -94,6 +95,7 @@ jobs:
           install_args: "python uv rust"
           cache: false
       - uses: $/.github/actions/set-version
+      - uses: $/.github/actions/versioned-readme
       - name: Build wheels
         uses: PyO3/maturin-action@v1.51.0
         with:
@@ -146,6 +148,7 @@ jobs:
           install_args: "python uv rust"
           cache: false
       - uses: $/.github/actions/set-version
+      - uses: $/.github/actions/versioned-readme
       - name: Build wheels
         uses: PyO3/maturin-action@v1.51.0
         with:
@@ -186,6 +189,7 @@ jobs:
           install_args: "python uv rust"
           cache: false
       - uses: $/.github/actions/set-version
+      - uses: $/.github/actions/versioned-readme
       - name: Build wheels
         uses: PyO3/maturin-action@v1.51.0
         with:
@@ -225,6 +229,7 @@ jobs:
           install_args: "python uv rust"
           cache: false
       - uses: $/.github/actions/set-version
+      - uses: $/.github/actions/versioned-readme
       - name: Build wheels
         uses: PyO3/maturin-action@v1.51.0
         with:
@@ -259,6 +264,7 @@ jobs:
           install_args: "python uv rust"
           cache: false
       - uses: $/.github/actions/set-version
+      - uses: $/.github/actions/versioned-readme
       - name: Build sdist
         uses: PyO3/maturin-action@v1.51.0
         with:
