@@ -26,7 +26,7 @@ export default function ImageTabs(props: ImageTabsProps) {
   };
 
   return (
-    <div>
+    <div data-archive-image-tabs={JSON.stringify(props.tabs)}>
       <div class="flex justify-center mb-4">
         <For each={props.tabs}>
           {(tab) => (

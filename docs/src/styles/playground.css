@@ -8,6 +8,22 @@
   padding: 2.5rem 0 4rem;
 }
 
+:root.playground-embedded header {
+  display: none;
+}
+
+:root.playground-embedded main {
+  margin-top: 0;
+}
+
+:root.playground-embedded main > div {
+  max-width: none;
+}
+
+:root.playground-embedded .playground-shell {
+  padding: 0 !important;
+}
+
 .playground-initial-loading {
   display: grid;
   min-height: 42rem;

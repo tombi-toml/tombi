@@ -1,6 +1,7 @@
 import { Meta, Title } from "@solidjs/meta";
 import type { Component, JSX } from "solid-js";
-import { DEFAULT_IMAGE, DEFAULT_URL } from "~/remark/page-heading";
+const DEFAULT_URL = `https://tombi-toml.github.io${import.meta.env.SERVER_BASE_URL || "/tombi/main"}/`;
+const DEFAULT_IMAGE = `${DEFAULT_URL}ogp.png`;
 
 interface PageHeadingProps {
   title: string;

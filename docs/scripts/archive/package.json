@@ -1,0 +1,9 @@
+{
+  "name": "tombi-docs-archive",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "jsdom": "26.1.0",
+    "prismjs": "1.30.0"
+  }
+}

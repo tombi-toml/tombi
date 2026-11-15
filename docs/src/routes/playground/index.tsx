@@ -23,17 +23,18 @@ import {
   Show,
 } from "solid-js";
 import { PageHeading } from "~/components/PageHeading";
-import { DEFAULT_URL } from "~/remark/page-heading";
 import { loadMonacoEditor, type Monaco } from "~/utils/monaco-editor";
 import { detectOperatingSystem } from "~/utils/platform";
-import { registerTombiLspProviders } from "~/utils/tombi-monaco";
+import { resolvePlaygroundRuntime } from "~/utils/playground-runtime";
 import {
   type LspDiagnostic,
   TombiLspClient,
   workspaceFileUri,
 } from "~/utils/tombi-lsp";
+import { registerTombiLspProviders } from "~/utils/tombi-monaco";
 import "~/styles/playground.css";
 
+const DEFAULT_URL = `https://tombi-toml.github.io${import.meta.env.SERVER_BASE_URL || "/tombi/main"}/`;
 const DEFAULT_PATH = "tombi.toml";
 const WORKSPACE_STORAGE_KEY = "tombi-playground-workspace-v1";
 let isInitialWorkspaceMount = true;
@@ -205,6 +206,7 @@ export default function Playground() {
   const [expandedPaths, setExpandedPaths] = createSignal(new Set<string>());
   const [diagnostics, setDiagnostics] = createSignal<LspDiagnostic[]>([]);
   const [lsp, setLsp] = createSignal<TombiLspClient>();
+  const [runtimeVersion, setRuntimeVersion] = createSignal<string>();
   const [monaco, setMonaco] = createSignal<Monaco>();
   const [codeEditor, setCodeEditor] =
     createSignal<MonacoEditor.IStandaloneCodeEditor>();
@@ -866,7 +868,10 @@ export default function Playground() {
 
     void (async () => {
       try {
-        client = await TombiLspClient.create();
+        const version = await resolvePlaygroundRuntime(
+          new URLSearchParams(window.location.search).get("runtime"),
+        );
+        client = await TombiLspClient.create(version);
         if (disposed) {
           client.dispose();
           return;
@@ -877,6 +882,7 @@ export default function Playground() {
           }
         }
         setLsp(client);
+        setRuntimeVersion(version);
         setRunState("ready");
         setStatusMessage("Tombi WebAssembly language server is ready.");
       } catch (error) {
@@ -888,6 +894,15 @@ export default function Playground() {
         );
       }
     })();
+  });
+
+  onMount(() => {
+    if (new URLSearchParams(window.location.search).get("embedded") !== "1")
+      return;
+    document.documentElement.classList.add("playground-embedded");
+    onCleanup(() =>
+      document.documentElement.classList.remove("playground-embedded"),
+    );
   });
 
   onMount(() => {
@@ -1064,7 +1079,9 @@ export default function Playground() {
                 </Show>
               </button>
               <div>
-                <strong>WASM LSP</strong>
+                <strong>
+                  WASM LSP{runtimeVersion() && ` v${runtimeVersion()}`}
+                </strong>
                 <span>{activePath()}</span>
               </div>
             </div>

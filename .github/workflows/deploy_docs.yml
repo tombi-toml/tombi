@@ -3,10 +3,16 @@ name: Deploy Docs to GitHub Pages
 on:
   push:
     branches: ["main"]
+    tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Release tag to rebuild (leave empty for main)"
+        required: false
+        type: string
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -15,6 +21,18 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  dispatch-tag:
+    if: github.event_name == 'push' && github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Build release docs from main workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: gh workflow run deploy_docs.yml --repo "${GITHUB_REPOSITORY}" --ref main --field version="${RELEASE_TAG}"
+
   detect-changes:
     runs-on: ubuntu-latest
     outputs:
@@ -26,7 +44,8 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - id: filter
-        uses: $/.github/actions/relevant-changes
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: ./.github/actions/relevant-changes
         with:
           base-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
           head-sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
@@ -39,6 +58,8 @@ jobs:
             typescript/@tombi-toml/wasm-lib/**
             typescript/@tombi-toml/wasm-lsp/**
             .github/actions/relevant-changes/**
+            .github/scripts/create-legacy-docs-redirects.mjs
+            .github/pages/**
             mise.toml
             .npmrc
             Cargo.toml
@@ -49,7 +70,7 @@ jobs:
 
   deploy:
     needs: detect-changes
-    if: needs.detect-changes.outputs.relevant == 'true'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.relevant == 'true')
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -58,7 +79,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7.0.1
         with:
-          persist-credentials: false
+          ref: ${{ inputs.version || github.sha }}
+          persist-credentials: true
+      - name: Select site version
+        id: version
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          version="${REQUESTED_VERSION:-main}"
+          if [ "${version}" != "main" ] && ! [[ "${version}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Invalid release tag: ${version}" >&2
+            exit 1
+          fi
+          echo "name=${version}" >> "$GITHUB_OUTPUT"
       - uses: jdx/mise-action@v5.0.0
         with:
           install_args: "node pnpm rust"
@@ -76,7 +110,88 @@ jobs:
         working-directory: ./docs
         run: pnpm run build
         env:
-          BASE_URL: /tombi
+          BASE_URL: /tombi/${{ steps.version.outputs.name }}
+
+      - name: Wait for release WASM
+        if: steps.version.outputs.name != 'main'
+        env:
+          SITE_VERSION: ${{ steps.version.outputs.name }}
+        run: |
+          set -euo pipefail
+          version="${SITE_VERSION#v}"
+          package="https://cdn.jsdelivr.net/npm/@tombi-toml/wasm-lsp@${version}/dist"
+          for ((attempt = 0; attempt < 40; attempt++)); do
+            if npm view "@tombi-toml/wasm-lsp@${version}" version > /dev/null 2>&1 &&
+              curl -fsSI "${package}/worker.js" > /dev/null &&
+              curl -fsSI "${package}/tombi_lsp_wasm.js" > /dev/null &&
+              curl -fsSI "${package}/tombi_lsp_wasm_bg.wasm" > /dev/null; then
+              exit 0
+            fi
+            sleep 30
+          done
+          echo "Release WASM ${version} is not available on npm CDN" >&2
+          exit 1
+
+      - name: Prepare versioned site
+        env:
+          SITE_VERSION: ${{ steps.version.outputs.name }}
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          main_sha="$(git rev-parse FETCH_HEAD)"
+          if git ls-remote --exit-code --heads origin gh-pages > /dev/null; then
+            git fetch origin gh-pages
+            git worktree add --detach pages FETCH_HEAD
+          else
+            git worktree add --orphan -b gh-pages pages
+          fi
+
+          if [ "${SITE_VERSION}" = "main" ]; then
+            for entry in pages/* pages/.[!.]*; do
+              [ -e "${entry}" ] || continue
+              name="${entry#pages/}"
+              case "${name}" in
+                .git|CNAME|common|main|v[0-9]*) ;;
+                *) rm -rf -- "${entry}" ;;
+              esac
+            done
+          fi
+
+          rm -rf "pages/${SITE_VERSION}"
+          mkdir "pages/${SITE_VERSION}"
+          if [ "${SITE_VERSION}" = "main" ]; then
+            cp -a docs/.output/public/. "pages/${SITE_VERSION}/"
+            if [ ! -f pages/common/v1/playground/index.html ]; then
+              mkdir -p pages/common/v1/archive
+              cp docs/scripts/archive/{archive.js,archive-ui.css,theme.js} pages/common/v1/archive/
+              BASE_URL=/tombi/common/v1 pnpm --dir docs run build
+              cp -a docs/.output/public/_build docs/.output/public/playground pages/common/v1/
+              cp docs/.output/public/{playground-worker.js,icon.svg,tombi-transparent.svg,favicon.ico,ogp.png} pages/common/v1/
+            fi
+          else
+            test -f pages/common/v1/playground/index.html
+            # Historical tags use the packager maintained by the main workflow.
+            git archive "${main_sha}" docs/scripts/archive docs/scripts/package-version.mjs | tar -x
+            npm install --prefix docs/scripts/archive --ignore-scripts --package-lock=false --no-audit --no-fund
+            node docs/scripts/package-version.mjs docs/.output/public "pages/${SITE_VERSION}" "${SITE_VERSION}"
+          fi
+          git show "${main_sha}:.github/pages/index.html" > pages/index.html
+          git show "${main_sha}:.github/pages/404.html" > pages/404.html
+          touch pages/.nojekyll
+          if [ "${SITE_VERSION}" = "main" ]; then
+            cp docs/public/install.sh docs/public/install.ps1 pages/
+            node .github/scripts/create-legacy-docs-redirects.mjs pages
+          fi
+
+          git -C pages config user.name "github-actions[bot]"
+          git -C pages config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C pages add -A
+          if ! git -C pages diff --cached --quiet; then
+            git -C pages commit -m "docs: deploy ${SITE_VERSION}"
+            git -C pages push origin HEAD:gh-pages
+          fi
+          mkdir site
+          rsync -a --exclude=.git pages/ site/
 
       - name: Setup Pages
         uses: actions/configure-pages@v4.0.0
@@ -84,7 +199,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3.0.1
         with:
-          path: "./docs/.output/public"
+          path: "./site"
 
       - name: Deploy to GitHub Pages
         id: deployment

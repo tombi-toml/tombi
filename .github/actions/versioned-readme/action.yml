@@ -1,0 +1,36 @@
+name: Prepare release documentation links
+description: Copy package README files and point their documentation links at the release tag
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        RELEASE_TAG: ${{ github.ref_name }}
+      run: |
+        set -euo pipefail
+        if [[ "${GITHUB_REF}" != refs/tags/v* ]]; then
+          exit 0
+        fi
+        if [[ ! "${RELEASE_TAG}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+          echo "Invalid release tag: ${RELEASE_TAG}" >&2
+          exit 1
+        fi
+        if ! grep -Fq "https://tombi-toml.github.io/tombi/${RELEASE_TAG}/" README.md; then
+          echo "The release tag README must link to ${RELEASE_TAG} documentation. Create the tag with .github/scripts/create-release-tag.sh." >&2
+          exit 1
+        fi
+
+        for readme in python/tombi/README.md typescript/@tombi-toml/cli/README.md editors/vscode/README.md; do
+          rm "${readme}"
+          cp README.md "${readme}"
+          sed -i.bak "s|https://tombi-toml.github.io/tombi/main/|https://tombi-toml.github.io/tombi/${RELEASE_TAG}/|g" "${readme}"
+          rm "${readme}.bak"
+        done
+
+        for manifest in typescript/@tombi-toml/*/package.json; do
+          sed -i.bak "s|https://tombi-toml.github.io/tombi/\"|https://tombi-toml.github.io/tombi/${RELEASE_TAG}/\"|g" "${manifest}"
+          rm "${manifest}.bak"
+        done
+        sed -i.bak "s|https://tombi-toml.github.io/tombi/docs/installation|https://tombi-toml.github.io/tombi/${RELEASE_TAG}/docs/installation|g" \
+          typescript/@tombi-toml/cli/bin/tombi
+        rm typescript/@tombi-toml/cli/bin/tombi.bak
