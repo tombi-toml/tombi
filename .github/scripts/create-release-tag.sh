@@ -26,12 +26,12 @@ trap 'git worktree remove --force "${release_dir}" 2>/dev/null || true' EXIT
 git worktree add --detach "${release_dir}" HEAD
 
 readme="${release_dir}/README.md"
-main_url="https://tombi-toml.github.io/tombi/main/"
-if ! grep -Fq "${main_url}" "${readme}"; then
-  echo "README.md does not contain the main documentation URL." >&2
+root_url="https://tombi-toml.github.io/tombi/"
+if ! grep -Fq "href=\"${root_url}\"" "${readme}"; then
+  echo "README.md does not contain the root documentation URL." >&2
   exit 1
 fi
-sed -i.bak "s|${main_url}|https://tombi-toml.github.io/tombi/${tag}/|g" "${readme}"
+sed -i.bak "s|href=\"${root_url}\"|href=\"https://tombi-toml.github.io/tombi/${tag}/\"|g" "${readme}"
 rm "${readme}.bak"
 
 git -C "${release_dir}" add README.md
