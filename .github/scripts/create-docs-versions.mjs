@@ -1,4 +1,4 @@
-import { readdir, writeFile } from "node:fs/promises";
+import { readFile, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 const pages = process.argv[2];
@@ -38,3 +38,7 @@ const versions = entries
   .sort((a, b) => compareVersions(b, a));
 
 await writeFile(join(pages, "versions.json"), JSON.stringify(["main", ...versions]));
+const index = await readFile(join(pages, "index.html"), "utf8");
+if (!index.includes("/tombi/main/")) throw new Error("Root redirect template must point to main");
+const latestRelease = versions.find((version) => !versionPattern.exec(version)[4]) ?? "main";
+await writeFile(join(pages, "index.html"), index.replaceAll("main/", `${latestRelease}/`));
