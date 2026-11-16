@@ -263,7 +263,7 @@ for (const [path, section] of [
 ]) {
   test(`archived header highlights the current section for ${path}`, async () => {
     const base = "/tombi/v1.11.2";
-    const shell = `<header><nav><a id="mobile-logo"></a><a href="${base}/docs" aria-current="page">Docs</a><a href="${base}/playground">Playground</a><a href="https://other.example${base}/docs">External</a><input></nav><div class="header-dropdown"><a href="${base}/"><span class="text-yellow">Home</span></a><a href="${base}/docs"><span>Docs</span></a><a href="${base}/playground"><span>Playground</span></a></div></header>`;
+    const shell = `<header><nav><a id="mobile-logo"></a><a href="${base}/docs" class="header-section-tab-active" aria-current="page">Docs</a><a href="${base}/playground">Playground</a><a href="https://other.example${base}/docs">External</a><input></nav><div class="header-dropdown"><a href="${base}/"><span class="text-yellow">Home</span></a><a href="${base}/docs"><span>Docs</span></a><a href="${base}/playground"><span>Playground</span></a></div></header>`;
     const dom = new JSDOM(`<style>.text-yellow { color: #facc15; }${styles}</style><meta name="tombi-archive-base" content="${base}"><div id="archive-header"></div>`, { url: `https://example.com${base}${path}` });
     try {
       await runInNewContext(`(async () => {${source}\n})()`, {
@@ -280,6 +280,12 @@ for (const [path, section] of [
       assert.deepEqual(active.map((anchor) => anchor.textContent), section ? [section] : []);
       const sections = Array.from(document.querySelectorAll('header nav a[data-archive-section]'));
       assert.deepEqual(sections.map((anchor) => anchor.textContent), ["Docs", "Playground"]);
+      assert.deepEqual(
+        sections
+          .filter((anchor) => anchor.classList.contains("header-section-tab-active"))
+          .map((anchor) => anchor.textContent),
+        section ? [section] : [],
+      );
       for (const dark of [false, true]) {
         document.documentElement.classList.toggle("dark", dark);
         for (const anchor of document.querySelectorAll("#archive-mobile a")) {
