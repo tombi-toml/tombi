@@ -115,6 +115,7 @@ for (const frameState of ["loaded", "unloaded", "absent"]) {
       Object.defineProperty(frame, "contentDocument", { value: null });
     }
     const frameRoot = frame?.contentDocument?.documentElement;
+    if (frameState === "loaded") frame.contentDocument.body.innerHTML = "<main></main>";
     await runInNewContext(`(async () => {${source}\n})()`, {
       document,
       location: dom.window.location,
@@ -125,6 +126,14 @@ for (const frameState of ["loaded", "unloaded", "absent"]) {
         json: async () => [],
       }),
     });
+
+    if (frameState === "loaded") {
+      const frameMain = frame.contentDocument.querySelector("main");
+      assert.equal(frameMain.style.paddingInline, "0");
+      frameMain.style.paddingInline = "1em";
+      frame.dispatchEvent(new dom.window.Event("load"));
+      assert.equal(frameMain.style.paddingInline, "0");
+    }
 
     for (const dark of [true, false]) {
       document.querySelector("#dark-mode-toggle").click();
