@@ -14,18 +14,20 @@ pub(in crate::editor) fn array_comma_trailing_comment<'t>(
                 && comma.trailing_comment().is_none() =>
         {
             let trailing_comment = value.trailing_comment().unwrap();
-            let comma_with_trailing_comment = format!(",{}", trailing_comment.syntax().text());
             vec![
                 Change::remove_token(trailing_comment.syntax()),
-                Change::append_replacing(value, comma, comma_with_trailing_comment),
+                Change::append_comma_with_comment_replacing(
+                    value,
+                    comma,
+                    trailing_comment.syntax(),
+                ),
             ]
         }
         None if should_append_missing_comma => {
             if let Some(trailing_comment) = value.trailing_comment() {
-                let comma_with_trailing_comment = format!(",{}", trailing_comment.syntax().text());
                 vec![
                     Change::remove_token(trailing_comment.syntax()),
-                    Change::append(value, comma_with_trailing_comment),
+                    Change::append_comma_with_comment(value, trailing_comment.syntax()),
                 ]
             } else {
                 vec![Change::append(value, ",".to_owned())]

@@ -16,6 +16,8 @@ enum ChangeKind {
         base: Range<usize>,
         text: String,
         remove_before: Option<Range<usize>>,
+        /// The text ends with a trailing comment, so a line break has to follow.
+        trailing_comment: bool,
     },
     Remove {
         target: Range<usize>,
@@ -42,18 +44,34 @@ impl Change {
             base: node_span(base.syntax()),
             text,
             remove_before: None,
+            trailing_comment: false,
         })
     }
 
-    pub(super) fn append_replacing<'t, 'u>(
+    /// Appends a comma followed by `comment` after `base`.
+    pub(super) fn append_comma_with_comment<'t>(
         base: &impl AstNode<'t>,
-        replaced: &impl AstNode<'u>,
-        text: String,
+        comment: &SyntaxToken,
     ) -> Self {
         Self(ChangeKind::Append {
             base: node_span(base.syntax()),
-            text,
+            text: format!(",{}", comment.text()),
+            remove_before: None,
+            trailing_comment: true,
+        })
+    }
+
+    /// Like [`Self::append_comma_with_comment`], replacing the existing `comma`.
+    pub(super) fn append_comma_with_comment_replacing<'t, 'u>(
+        base: &impl AstNode<'t>,
+        replaced: &impl AstNode<'u>,
+        comment: &SyntaxToken,
+    ) -> Self {
+        Self(ChangeKind::Append {
+            base: node_span(base.syntax()),
+            text: format!(",{}", comment.text()),
             remove_before: Some(node_span(replaced.syntax())),
+            trailing_comment: true,
         })
     }
 
@@ -89,6 +107,13 @@ pub(super) enum RewriteError {
     OverlappingReplace(Range<usize>),
 }
 
+#[derive(Debug, PartialEq, Eq)]
+struct Appended {
+    base: Range<usize>,
+    text: String,
+    trailing_comment: bool,
+}
+
 /// Every change refers to the original source, so the result must not depend
 /// on the order in which the rules emitted them. `apply` first collects all
 /// changes and then renders the source once.
@@ -98,7 +123,7 @@ struct Plan<'a> {
     /// Sorted, merged and non-overlapping.
     removed: Vec<Range<usize>>,
     /// Sorted by `base.end`; changes at the same offset keep their order.
-    appends: Vec<(Range<usize>, String)>,
+    appends: Vec<Appended>,
     /// Sorted by `old.start`, then outermost first. Nested or disjoint only.
     replaces: Vec<(Range<usize>, Vec<SourcePart>)>,
     /// Parts that lie outside the range they replace (e.g. the trailing comma
@@ -109,13 +134,53 @@ struct Plan<'a> {
 
 pub(super) fn apply(root: &SyntaxNode, changes: Vec<Change>) -> Result<String, RewriteError> {
     let plan = Plan::new(root.text(), changes)?;
-    let mut output = plan.top.clone();
+    let mut output = Output::default();
+    output.push_str(&plan.top);
     plan.render(
         0..plan.source.len(),
         &mut vec![false; plan.replaces.len()],
         &mut output,
     );
-    Ok(output)
+    Ok(output.text)
+}
+
+/// Rendered text.
+///
+/// A trailing comment runs to the end of the line, so text that follows it has
+/// to start on a new line. That is decided when the following text arrives,
+/// wherever it comes from (the same part, a sibling part or the text after a
+/// replaced range).
+#[derive(Default)]
+struct Output {
+    text: String,
+    after_trailing_comment: bool,
+}
+
+impl Output {
+    fn push_str(&mut self, text: &str) {
+        if self.after_trailing_comment {
+            match text.trim_start_matches([' ', '\t']).chars().next() {
+                // Still on the line of the comment.
+                None => {}
+                Some('\n' | '\r') => self.after_trailing_comment = false,
+                Some(_) => {
+                    self.text.push('\n');
+                    self.after_trailing_comment = false;
+                }
+            }
+        }
+        self.text.push_str(text);
+    }
+
+    fn push_trailing_comment(&mut self, text: &str) {
+        self.push_str(text);
+        self.after_trailing_comment = true;
+    }
+
+    fn append(&mut self, other: Output) {
+        self.push_str(&other.text);
+        self.after_trailing_comment |= other.after_trailing_comment;
+    }
 }
 
 impl<'a> Plan<'a> {
@@ -132,6 +197,7 @@ impl<'a> Plan<'a> {
                     base,
                     text,
                     remove_before,
+                    trailing_comment,
                 } => {
                     validate_span(source, &base)?;
                     if let Some(replaced) = remove_before {
@@ -139,8 +205,13 @@ impl<'a> Plan<'a> {
                         removed.push(replaced);
                     }
                     // Rules may be evaluated more than once for the same node.
-                    if !appends.contains(&(base.clone(), text.clone())) {
-                        appends.push((base, text));
+                    let appended = Appended {
+                        base,
+                        text,
+                        trailing_comment,
+                    };
+                    if !appends.contains(&appended) {
+                        appends.push(appended);
                     }
                 }
                 ChangeKind::Remove { target } => {
@@ -169,8 +240,8 @@ impl<'a> Plan<'a> {
         }
 
         // Text that is already removed cannot be appended to.
-        appends.retain(|(base, _)| !is_removed(&merged, base));
-        appends.sort_by_key(|(base, _)| base.end);
+        appends.retain(|appended| !is_removed(&merged, &appended.base));
+        appends.sort_by_key(|appended| appended.base.end);
 
         replaces.sort_by(|(left, _), (right, _)| {
             left.start.cmp(&right.start).then(right.end.cmp(&left.end))
@@ -212,7 +283,7 @@ impl<'a> Plan<'a> {
     ///
     /// `active` marks the replacements currently being expanded, so a
     /// replacement is never applied to its own parts.
-    fn render(&self, span: Range<usize>, active: &mut [bool], output: &mut String) {
+    fn render(&self, span: Range<usize>, active: &mut [bool], output: &mut Output) {
         let mut position = span.start;
         for (index, (old, parts)) in self.replaces.iter().enumerate() {
             if active[index] || old.start < position || old.end > span.end {
@@ -223,13 +294,13 @@ impl<'a> Plan<'a> {
             let rendered = parts
                 .iter()
                 .map(|part| {
-                    let mut text = String::new();
-                    self.render(part.source_span.clone(), active, &mut text);
-                    text
+                    let mut rendered = Output::default();
+                    self.render(part.source_span.clone(), active, &mut rendered);
+                    rendered
                 })
                 .collect_vec();
             active[index] = false;
-            output.push_str(&separate_source_parts(parts, rendered));
+            output.append(separate_source_parts(parts, rendered));
             position = old.end;
         }
         self.render_plain(position..span.end, active, output);
@@ -237,7 +308,7 @@ impl<'a> Plan<'a> {
 
     /// Renders source text without replacements: removed text is skipped and
     /// appended text is inserted right after the node it is attached to.
-    fn render_plain(&self, span: Range<usize>, active: &[bool], output: &mut String) {
+    fn render_plain(&self, span: Range<usize>, active: &[bool], output: &mut Output) {
         let skipped = self
             .removed
             .iter()
@@ -254,27 +325,31 @@ impl<'a> Plan<'a> {
 
         let first = self
             .appends
-            .partition_point(|(base, _)| base.end <= span.start);
+            .partition_point(|appended| appended.base.end <= span.start);
         let mut position = span.start;
-        for (base, text) in self.appends[first..]
+        for appended in self.appends[first..]
             .iter()
-            .take_while(|(base, _)| base.end <= span.end)
+            .take_while(|appended| appended.base.end <= span.end)
             // Appends attached to a moved part are emitted along with the part.
-            .filter(|(base, _)| {
+            .filter(|appended| {
                 !self.moved.iter().any(|(index, moved)| {
-                    !active[*index] && is_removed(std::slice::from_ref(moved), base)
+                    !active[*index] && is_removed(std::slice::from_ref(moved), &appended.base)
                 })
             })
         {
-            push_unskipped(self.source, &skipped, position..base.end, output);
-            output.push_str(text);
-            position = position.max(base.end);
+            push_unskipped(self.source, &skipped, position..appended.base.end, output);
+            if appended.trailing_comment {
+                output.push_trailing_comment(&appended.text);
+            } else {
+                output.push_str(&appended.text);
+            }
+            position = position.max(appended.base.end);
         }
         push_unskipped(self.source, &skipped, position..span.end, output);
     }
 }
 
-fn push_unskipped(source: &str, skipped: &[Range<usize>], span: Range<usize>, output: &mut String) {
+fn push_unskipped(source: &str, skipped: &[Range<usize>], span: Range<usize>, output: &mut Output) {
     let mut position = span.start;
     for skipped in skipped.iter().filter(|skipped| overlaps(skipped, &span)) {
         if position < skipped.start {
@@ -293,12 +368,12 @@ fn is_removed(removed: &[Range<usize>], target: &Range<usize>) -> bool {
         .any(|span| span.start <= target.start && target.end <= span.end)
 }
 
-fn separate_source_parts(parts: &[SourcePart], rendered: Vec<String>) -> String {
-    let mut output = String::new();
-    for (index, part) in parts.iter().enumerate() {
+fn separate_source_parts(parts: &[SourcePart], rendered: Vec<Output>) -> Output {
+    let mut output = Output::default();
+    let mut previous = None;
+    for (index, (part, rendered)) in parts.iter().zip(rendered).enumerate() {
         if index > 0 {
-            let previous = rendered[index - 1].chars().next_back();
-            let next = rendered[index].chars().next();
+            let next = rendered.text.chars().next();
             let prefix = if matches!(part.kind, SyntaxKind::TABLE | SyntaxKind::ARRAY_OF_TABLE)
                 && next.is_some_and(|character| !character.is_whitespace())
             {
@@ -313,7 +388,8 @@ fn separate_source_parts(parts: &[SourcePart], rendered: Vec<String>) -> String 
             };
             output.push_str(prefix);
         }
-        output.push_str(&rendered[index]);
+        previous = rendered.text.chars().next_back();
+        output.append(rendered);
     }
     output
 }
