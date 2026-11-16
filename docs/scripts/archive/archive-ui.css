@@ -56,6 +56,7 @@
 }
 main:has(> .archive-playground-frame) {
   padding-inline: 0;
+  padding-top: 2rem;
 }
 .archive-playground-frame {
   display: block;
@@ -86,6 +87,9 @@ main:has(> .archive-playground-frame) {
   color: #4ec9b0;
 }
 @media (max-width: 767px) {
+  main:has(> .archive-playground-frame) {
+    padding-top: 2.5rem;
+  }
   header.archive-search-open nav > div div:has(input) {
     width: 100%;
     opacity: 1;

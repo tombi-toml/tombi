@@ -129,9 +129,12 @@ for (const frameState of ["loaded", "unloaded", "absent"]) {
 
     if (frameState === "loaded") {
       const frameMain = frame.contentDocument.querySelector("main");
+      assert.equal(frame.contentDocument.body.style.margin, "0px");
       assert.equal(frameMain.style.paddingInline, "0");
+      frame.contentDocument.body.style.margin = "8px";
       frameMain.style.paddingInline = "1em";
       frame.dispatchEvent(new dom.window.Event("load"));
+      assert.equal(frame.contentDocument.body.style.margin, "0px");
       assert.equal(frameMain.style.paddingInline, "0");
     }
 

@@ -83,13 +83,15 @@ document.querySelector("#dark-mode-toggle")?.addEventListener("click", () => {
 });
 const playgroundFrame = document.querySelector(".archive-playground-frame");
 if (playgroundFrame) {
-  const removeEmbeddedPadding = () => {
-    playgroundFrame.contentDocument
+  const normalizeEmbeddedSpacing = () => {
+    const document = playgroundFrame.contentDocument;
+    document?.body?.style.setProperty("margin", "0");
+    document
       ?.querySelector("main")
       ?.style.setProperty("padding-inline", "0");
   };
-  playgroundFrame.addEventListener("load", removeEmbeddedPadding);
-  removeEmbeddedPadding();
+  playgroundFrame.addEventListener("load", normalizeEmbeddedSpacing);
+  normalizeEmbeddedSpacing();
 }
 const input = document.querySelector("header input");
 input.tabIndex = 0;
