@@ -5,6 +5,7 @@ import { runInNewContext } from "node:vm";
 import { JSDOM } from "jsdom";
 
 const source = await readFile(new URL("./archive.js", import.meta.url), "utf8");
+const styles = await readFile(new URL("./archive-ui.css", import.meta.url), "utf8");
 
 test("archived mobile search toggles while keyboard shortcuts open and close it", async () => {
   const shell = '<header><a id="mobile-logo"></a><input><button aria-label="Search"><div class="absolute transition-all duration-300 opacity-0 -rotate-90"><svg></svg></div><div class="transition-all duration-300 opacity-100 rotate-0"><svg></svg></div></button><div class="header-dropdown"></div></header>';
@@ -154,9 +155,11 @@ for (const layout of ["max-height", "grid"]) {
     const panel = (contents) => grid
       ? `<div class="grid grid-rows-[0fr]" inert><div class="min-h-0 overflow-hidden">${contents}</div></div>`
       : `<div style="max-height:0px">${contents}</div>`;
-    const item = (name, contents) => `<div><a href="/docs/${name}">${name}<button aria-expanded="false"><svg></svg></button></a>${panel(contents)}</div>`;
-    const shell = `<header><a id="mobile-logo"></a><input><div class="header-dropdown ${grid ? "grid grid-rows-[0fr]" : "max-h-0"}"><nav>${item("Docs", item("Formatter", '<a href="/docs/formatter/options">Options</a>'))}</nav></div></header>`;
-    const dom = new JSDOM('<meta name="tombi-archive-base" content="/v1"><div id="archive-header"></div>', { url: "https://example.com/v1/docs" });
+    const item = (name, path, contents) => `<div><a href="${base}${path}"><span>${name}</span><button aria-expanded="false"><svg></svg></button></a>${panel(contents)}</div>`;
+    const base = "/tombi/v1.11.2";
+    const currentPath = `${base}/docs/language-server/diagnostics`;
+    const shell = `<header><a id="mobile-logo"></a><input><div class="header-dropdown ${grid ? "grid grid-rows-[0fr]" : "max-h-0"}"><nav>${item("Docs", "/docs", item("Language Server", "/docs/language-server", `<a href="${currentPath}"><span>Diagnostics</span></a>`) + item("CLI", "/docs/cli", `<a href="${base}/docs/cli/diagnostics-output" aria-current="page"><span>Diagnostics Output</span></a>`))}</nav><button id="dark-mode-toggle" aria-label="Toggle theme"><svg></svg></button><button id="other-menu" aria-expanded="false" aria-label="Other menu"><svg></svg></button><a href="/other"><button id="no-panel" aria-expanded="false" aria-label="No panel"><svg></svg></button></a></div></header>`;
+    const dom = new JSDOM(`<style>${styles}</style><meta name="tombi-archive-base" content="${base}"><div id="archive-header"></div>`, { url: `https://example.com${currentPath}/` });
     await runInNewContext(`(async () => {${source}\n})()`, {
       document: dom.window.document,
       location: dom.window.location,
@@ -172,11 +175,10 @@ for (const layout of ["max-height", "grid"]) {
     assert.equal(mobile.hidden, false);
     if (grid) assert.equal(mobile.style.gridTemplateRows, "1fr");
 
-    const [docs, formatter] = mobile.querySelectorAll("button");
-    for (const button of [docs, formatter, docs, docs, formatter]) {
-      const expanded = button.getAttribute("aria-expanded") !== "true";
-      button.click();
+    const [docs, languageServer, cli] = mobile.querySelectorAll("nav button");
+    const assertExpanded = (button, expanded) => {
       assert.equal(button.getAttribute("aria-expanded"), String(expanded));
+      assert.equal(button.getAttribute("aria-label"), expanded ? "Collapse section" : "Expand section");
       assert.equal(button.querySelector("svg").classList.contains("rotate-90"), expanded);
       const children = button.closest("a").nextElementSibling;
       if (grid) {
@@ -185,9 +187,42 @@ for (const layout of ["max-height", "grid"]) {
       } else {
         assert.equal(children.style.maxHeight, expanded ? "none" : "0px");
       }
+    };
+    assert.deepEqual(Array.from(mobile.querySelectorAll('[aria-current="page"]'), (anchor) => anchor.getAttribute("href")), [currentPath]);
+    assertExpanded(docs, true);
+    assertExpanded(languageServer, true);
+    assertExpanded(cli, false);
+    const currentLink = mobile.querySelector('[aria-current="page"]');
+    assert.equal(dom.window.getComputedStyle(currentLink).color, "rgb(255, 255, 255)");
+    document.documentElement.classList.add("dark");
+    assert.equal(dom.window.getComputedStyle(currentLink).color, "rgb(250, 204, 21)");
+    for (const [id, label, expanded] of [
+      ["dark-mode-toggle", "Toggle theme", null],
+      ["other-menu", "Other menu", "false"],
+      ["no-panel", "No panel", "false"],
+    ]) {
+      const button = document.getElementById(id);
+      assert.equal(button.getAttribute("aria-label"), label);
+      assert.equal(button.getAttribute("aria-expanded"), expanded);
+      const attributes = button.outerHTML;
+      const event = new dom.window.MouseEvent("click", { bubbles: true, cancelable: true });
+      button.dispatchEvent(event);
+      assert.equal(event.defaultPrevented, false);
+      assert.equal(button.outerHTML, attributes);
+    }
+    assert.equal(document.documentElement.classList.contains("dark"), false);
+    for (const button of [docs, languageServer, docs, docs, languageServer, cli]) {
+      const expanded = button.getAttribute("aria-expanded") !== "true";
+      button.click();
+      assertExpanded(button, expanded);
     }
     document.querySelector("#mobile-logo").click();
     assert.equal(mobile.hidden, true);
+    document.querySelector("#mobile-logo").click();
+    assert.equal(mobile.hidden, false);
+    assertExpanded(docs, false);
+    assertExpanded(languageServer, true);
+    assertExpanded(cli, true);
     dom.window.close();
   });
 }
