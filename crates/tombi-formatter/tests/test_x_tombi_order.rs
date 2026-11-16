@@ -36,6 +36,70 @@ mod table_keys_order {
 
         test_format! {
             #[tokio::test]
+            async fn test_root_tables_order_with_schema_directive(
+                r#"#:schema https://www.schemastore.org/pyproject.json
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "demo"
+"#,
+                SchemaPath(pyproject_schema_path()),
+                SourcePath(project_root_path().join("pyproject.toml")),
+            ) -> Ok(
+                r#"#:schema https://www.schemastore.org/pyproject.json
+
+[project]
+name = "demo"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+"#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_schema_directive_with_table_and_array_order_and_trailing_comment(
+                r#"#:schema https://www.schemastore.org/pyproject.json
+[build-system]
+requires = [
+  "b" # bc
+  , "a"
+]
+
+[project]
+name = "demo"
+dependencies = [
+  "z", # zc
+  "y" # yc
+]
+"#,
+                SchemaPath(pyproject_schema_path()),
+                SourcePath(project_root_path().join("pyproject.toml")),
+            ) -> Ok(
+                r#"#:schema https://www.schemastore.org/pyproject.json
+
+[project]
+name = "demo"
+dependencies = [
+  "y",  # yc
+  "z",  # zc
+]
+
+[build-system]
+requires = [
+  "a",
+  "b",  # bc
+]
+"#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
             async fn test_project_dependencies_single_line(
                 r#"
                 [project]
