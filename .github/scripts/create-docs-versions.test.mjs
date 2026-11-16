@@ -14,12 +14,15 @@ const template = fileURLToPath(new URL("../pages/index.html", import.meta.url));
 async function generate(pages) {
   await copyFile(template, join(pages, "index.html"));
   await promisify(execFile)(process.execPath, [script, pages]);
-  return readFile(join(pages, "index.html"), "utf8");
+  return {
+    root: await readFile(join(pages, "index.html"), "utf8"),
+    latest: await readFile(join(pages, "latest", "index.html"), "utf8"),
+  };
 }
 
 function assertRedirect(index, version) {
-  assert.ok(index.includes(`content="0; url=${version}/"`));
-  assert.ok(index.includes(`<a href="${version}/">`));
+  assert.ok(index.includes(`content="0; url=/tombi/${version}/"`));
+  assert.ok(index.includes(`<a href="/tombi/${version}/">`));
   const inlineScript = index.match(/<script>([\s\S]*?)<\/script>/)?.[1];
   assert.ok(inlineScript);
   let destination;
@@ -48,7 +51,7 @@ test("published versions put stable releases before prereleases", async () => {
     ]) {
       await mkdir(join(pages, name));
     }
-    const index = await generate(pages);
+    const { root, latest } = await generate(pages);
     assert.deepEqual(JSON.parse(await readFile(join(pages, "versions.json"), "utf8")), [
       "main",
       "v1.13.0-rc.1",
@@ -59,7 +62,9 @@ test("published versions put stable releases before prereleases", async () => {
       "v1.11.2-rc.1",
       "v1.9.9",
     ]);
-    assertRedirect(index, "v1.12.0");
+    assertRedirect(root, "v1.12.0");
+    assertRedirect(latest, "v1.12.0");
+    assert.equal(latest, root);
   } finally {
     await rm(pages, { recursive: true, force: true });
   }
@@ -69,8 +74,9 @@ test("root redirect falls back to main when only prereleases are deployed", asyn
   const pages = await mkdtemp(join(tmpdir(), "tombi-versions-"));
   try {
     await mkdir(join(pages, "v2.0.0-rc.1"));
-    const index = await generate(pages);
-    assertRedirect(index, "main");
+    const { root, latest } = await generate(pages);
+    assertRedirect(root, "main");
+    assertRedirect(latest, "main");
   } finally {
     await rm(pages, { recursive: true, force: true });
   }
@@ -79,9 +85,10 @@ test("root redirect falls back to main when only prereleases are deployed", asyn
 test("root redirect falls back to main when no release is deployed", async () => {
   const pages = await mkdtemp(join(tmpdir(), "tombi-versions-"));
   try {
-    const index = await generate(pages);
+    const { root, latest } = await generate(pages);
     assert.deepEqual(JSON.parse(await readFile(join(pages, "versions.json"), "utf8")), ["main"]);
-    assertRedirect(index, "main");
+    assertRedirect(root, "main");
+    assertRedirect(latest, "main");
   } finally {
     await rm(pages, { recursive: true, force: true });
   }

@@ -15,12 +15,12 @@ runs:
           echo "Invalid release tag: ${RELEASE_TAG}" >&2
           exit 1
         fi
-        root_url="https://tombi-toml.github.io/tombi/"
+        latest_url="https://tombi-toml.github.io/tombi/latest"
         release_url="https://tombi-toml.github.io/tombi/${RELEASE_TAG}/"
         for readme in python/tombi/README.md typescript/@tombi-toml/cli/README.md editors/vscode/README.md; do
           rm "${readme}"
           cp README.md "${readme}"
-          sed -i.bak "s|href=\"${root_url}\"|href=\"${release_url}\"|g" "${readme}"
+          sed -i.bak "s|href=\"${latest_url}\"|href=\"${release_url}\"|g" "${readme}"
           rm "${readme}.bak"
           if ! grep -Fq "href=\"${release_url}\"" "${readme}"; then
             echo "${readme} must link to ${RELEASE_TAG} documentation." >&2
