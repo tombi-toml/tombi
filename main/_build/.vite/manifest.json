@@ -101,8 +101,8 @@
       "_web-DCz9_uPG.js"
     ]
   },
-  "_components-b5RolwDv.js": {
-    "file": "assets/components-b5RolwDv.js",
+  "_components-BRpZPgCn.js": {
+    "file": "assets/components-BRpZPgCn.js",
     "name": "components",
     "imports": [
       "_web-DCz9_uPG.js"
@@ -150,12 +150,12 @@
       "_index-7xQSF2zI.js"
     ]
   },
-  "_index-DZHmmBfV.js": {
-    "file": "assets/index-DZHmmBfV.js",
+  "_index-DGEtbwUA.js": {
+    "file": "assets/index-DGEtbwUA.js",
     "name": "index",
     "imports": [
       "_web-DCz9_uPG.js",
-      "_components-b5RolwDv.js",
+      "_components-BRpZPgCn.js",
       "_index-CcAEBGL_.js",
       "_index-Dhcltlfs.js",
       "_platform-CPzJTEFe.js"
@@ -231,7 +231,7 @@
     ]
   },
   "src/routes/docs.tsx?pick=default&pick=$css": {
-    "file": "assets/docs-B6PBzHEq.js",
+    "file": "assets/docs-BnO6YObn.js",
     "name": "docs",
     "src": "src/routes/docs.tsx?pick=default&pick=$css",
     "isEntry": true,
@@ -241,7 +241,7 @@
       "_CodeTabsContext-Bq8doJbE.js",
       "_index-7xQSF2zI.js",
       "_index-CcAEBGL_.js",
-      "_components-b5RolwDv.js"
+      "_components-BRpZPgCn.js"
     ]
   },
   "src/routes/docs/cli/diagnostics-output.mdx?pick=$css": {
@@ -816,7 +816,7 @@
     ]
   },
   "src/routes/index.tsx?pick=default&pick=$css": {
-    "file": "assets/index-B6KPxs-c.js",
+    "file": "assets/index-BADeMycO.js",
     "name": "index",
     "src": "src/routes/index.tsx?pick=default&pick=$css",
     "isEntry": true,
@@ -825,21 +825,21 @@
       "_web-DCz9_uPG.js",
       "_index-CXKsyjYN.js",
       "_index-Dhcltlfs.js",
-      "_components-b5RolwDv.js",
+      "_components-BRpZPgCn.js",
       "_PageHeading-Ckngk6DM.js",
       "_index-7xQSF2zI.js"
     ]
   },
   "src/routes/layout.tsx?pick=default&pick=$css": {
-    "file": "assets/layout-BvGUTkqp.js",
+    "file": "assets/layout-CWJ1b15h.js",
     "name": "layout",
     "src": "src/routes/layout.tsx?pick=default&pick=$css",
     "isEntry": true,
     "isDynamicEntry": true,
     "imports": [
       "_web-DCz9_uPG.js",
-      "_index-DZHmmBfV.js",
-      "_components-b5RolwDv.js",
+      "_index-DGEtbwUA.js",
+      "_components-BRpZPgCn.js",
       "_index-CcAEBGL_.js",
       "_index-7xQSF2zI.js",
       "_index-Dhcltlfs.js",
@@ -872,7 +872,7 @@
     ]
   },
   "virtual:$vinxi/handler/client": {
-    "file": "assets/client-5Cxp7og6.js",
+    "file": "assets/client-DeAeZXeh.js",
     "name": "client",
     "src": "virtual:$vinxi/handler/client",
     "isEntry": true,
@@ -881,11 +881,11 @@
       "_PageHeading-Ckngk6DM.js",
       "_preload-helper-TXE1L53l.js",
       "_index-6OQr06v0.js",
-      "_index-DZHmmBfV.js",
+      "_index-DGEtbwUA.js",
       "_CodeBlock-DcLPlfzH.js",
       "_Highlight-CMhf5ZLw.js",
       "_Table-CZPHGeGB.js",
-      "_components-b5RolwDv.js",
+      "_components-BRpZPgCn.js",
       "_HttpStatusCode-DjTx85av.js",
       "_index-CcAEBGL_.js",
       "_index-7xQSF2zI.js",
@@ -950,7 +950,7 @@
       "src/routes/playground/index.tsx?pick=default&pick=$css"
     ],
     "css": [
-      "assets/client-DkmUnIku.css"
+      "assets/client-XgsCfKls.css"
     ]
   }
 }
