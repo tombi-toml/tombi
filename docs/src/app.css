@@ -1,6 +1,20 @@
 @import "https://cdnjs.cloudflare.com/ajax/libs/prism-themes/1.5.0/prism-vsc-dark-plus.min.css";
 @import "./styles/code-block.css";
 
+.header-section-tab {
+  position: relative;
+}
+
+.header-section-tab-active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 2px;
+  height: 3px;
+  background: #facc15;
+}
+
 :root {
   --docs-fixed-header-height: 80px;
   --docs-sticky-table-offset: 0px;

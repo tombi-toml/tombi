@@ -48,11 +48,25 @@
   font-weight: bold;
   color: var(--color-primary);
 }
-#archive-mobile a[aria-current="page"] {
+#archive-mobile a,
+#archive-mobile a > span {
   color: #fff;
 }
-:root.dark #archive-mobile a[aria-current="page"] {
+#archive-mobile a[aria-current="page"],
+#archive-mobile a[aria-current="page"] > span {
   color: #facc15;
+}
+#archive-header a[data-archive-section] {
+  position: relative;
+}
+#archive-header a[data-archive-section][aria-current="location"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 2px;
+  height: 3px;
+  background: #facc15;
 }
 [data-tabs] button[aria-selected="true"] {
   color: var(--color-text);
