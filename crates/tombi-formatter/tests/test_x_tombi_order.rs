@@ -1684,6 +1684,80 @@ requires = [
 
         test_format! {
             #[tokio::test]
+            async fn test_array_comma_on_next_line_after_trailing_comment(
+                r#"
+                key = [
+                  1 # comment
+                  , 2
+                ]
+                "#,
+            ) -> Ok(
+                r#"
+                key = [
+                  1,  # comment
+                  2
+                ]
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_inline_table_comma_on_next_line_after_trailing_comment(
+                r#"
+                key = { a = 1 # comment
+                  , b = 2 }
+                "#,
+            ) -> Ok(
+                r#"
+                key = {
+                  a = 1,  # comment
+                  b = 2
+                }
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_array_order_moves_trailing_comment_before_closing_bracket(
+                r#"
+                # tombi: format.rules.array-values-order = "ascending"
+                key = [2 # comment
+                , 1]
+                "#,
+            ) -> Ok(
+                r#"
+                # tombi: format.rules.array-values-order = "ascending"
+                key = [
+                  1,
+                  2,  # comment
+                ]
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_inline_table_order_moves_trailing_comment_before_closing_brace(
+                r#"
+                # tombi: format.rules.table-keys-order = "ascending"
+                key = { b = 2 # comment
+                , a = 1 }
+                "#,
+            ) -> Ok(
+                r#"
+                # tombi: format.rules.table-keys-order = "ascending"
+                key = {
+                  a = 1,
+                  b = 2,  # comment
+                }
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
             async fn test_inline_table_with_trailing_comment_directive(
                 r#"
                 key = {
