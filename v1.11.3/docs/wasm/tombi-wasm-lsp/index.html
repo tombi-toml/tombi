@@ -1,0 +1,60 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title data-sm="00000001000000004000000200000000">Language Server</title><meta data-sm="00000001000000004000000200000010" name="description" content="Use the tombi-wasm-lsp package and its Web Worker adapter."><meta data-sm="00000001000000004000000200000020" property="og:type" content="website"><meta data-sm="00000001000000004000000200000030" property="og:url" content="https://tombi-toml.github.io/tombi/v1.11.3/docs/wasm/tombi-wasm-lsp"><meta data-sm="00000001000000004000000200000040" property="og:title" content="Language Server"><meta data-sm="00000001000000004000000200000050" property="og:description" content="Use the tombi-wasm-lsp package and its Web Worker adapter."><meta data-sm="00000001000000004000000200000060" property="og:image" content="https://raw.githubusercontent.com/tombi-toml/tombi/v1.11.3/docs/public/ogp.png"><meta data-sm="00000001000000004000000200000070" property="og:site_name" content="Tombi"><meta data-sm="00000001000000004000000200000080" property="twitter:card" content="summary_large_image"><meta data-sm="00000001000000004000000200000090" property="twitter:url" content="https://tombi-toml.github.io/tombi/v1.11.3/docs/wasm/tombi-wasm-lsp"><meta data-sm="000000010000000040000002000000a100" property="twitter:title" content="Language Server"><meta data-sm="000000010000000040000002000000a110" property="twitter:description" content="Use the tombi-wasm-lsp package and its Web Worker adapter."><meta data-sm="000000010000000040000002000000a120" property="twitter:image" content="https://raw.githubusercontent.com/tombi-toml/tombi/v1.11.3/docs/public/ogp.png"><meta name="tombi-archive-base" content="/tombi/v1.11.3"><link rel="icon" href="https://raw.githubusercontent.com/tombi-toml/tombi/v1.11.3/docs/public/favicon.ico"><link rel="stylesheet" href="/tombi/v1.11.3/archive.css"><link rel="stylesheet" href="/tombi/common/v1/archive/archive-ui.css"><link rel="stylesheet" href="/tombi/common/v1/version-picker.css"><script src="/tombi/common/v1/archive/theme.js"></script><script type="module" src="/tombi/common/v1/archive/archive.js"></script><script defer src="/tombi/common/v1/version-picker.js"></script></head><body><div class="min-h-screen bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100"><div id="archive-header"></div><main class="flex-1 mt-20 pt-0"><div class="max-w-7xl mx-auto"><div class="flex w-full max-w-[100vw]"><nav id="archive-sidebar" class="w-[250px] shrink-0 h-screen sticky top-0 overflow-y-auto p-4 bg-[--color-bg-secondary] border-r border-[--color-border] md:block hidden" aria-label="Documentation"></nav><main tabindex="-1" class="flex-1 min-w-0 p-4 mdx-content min-h-screen max-w-full outline-none"><div class="max-w-full">
+<h1 id="tombi-wasm-lsp" class="group relative heading-with-anchor "><code>tombi-wasm-lsp</code></h1>
+<p><code>tombi-wasm-lsp</code> provides Tombi's Language Server for browsers and other JavaScript
+environments. It also includes a Web Worker adapter at
+<code>tombi-wasm-lsp/worker</code>.</p>
+<h2 id="install" class="group relative heading-with-anchor ">Install</h2>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-sh overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-sh" tabindex="-1"><span class="f">pnpm</span> <span class="f">add</span> tombi-wasm-lsp</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h2 id="run-the-language-server" class="group relative heading-with-anchor ">Run the Language Server</h2>
+<p>The package exposes <code>serve</code> for hosts that provide browser-compatible streams.
+<code>ServerConfig</code> receives an async iterator of <code>Uint8Array</code> input chunks and a
+<code>WritableStream</code> for output:</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-ts overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-ts" tabindex="-1"><span class="k">import</span> init, { ServerConfig, serve } <span class="k">from</span> <span class="s">"tombi-wasm-lsp"</span>;
+
+<span class="k">await</span> <span class="f">init</span>();
+
+<span class="k">const</span> input = <span class="k">new</span> <span class="t">ReadableStream&lt;Uint8Array&gt;</span>({
+  <span class="f">start</span>(controller) {
+    <span class="c">// Enqueue LSP-framed messages here.</span>
+  },
+});
+<span class="k">const</span> output = <span class="k">new</span> <span class="t">WritableStream&lt;Uint8Array&gt;</span>({
+  <span class="f">write</span>(chunk) {
+    <span class="c">// Read LSP-framed responses here.</span>
+    <span class="s">console</span>.<span class="f">log</span>(chunk);
+  },
+});
+
+<span class="k">await</span> <span class="f">serve</span>(<span class="k">new</span> <span class="t">ServerConfig</span>(input.<span class="f">values</span>(), output));</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<p>Messages use standard LSP JSON-RPC framing (<code>Content-Length</code> followed by a JSON
+message). Browser hosts should represent the virtual workspace with
+<code>textDocument/didOpen</code>, synchronize edits with <code>textDocument/didChange</code>, and send
+<code>textDocument/didSave</code> when appropriate.</p>
+<p>Before starting a server, preload files that are not opened in the editor with
+<code>set_workspace_entries</code>:</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-ts overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-ts" tabindex="-1"><span class="k">import</span> { set_workspace_entries } <span class="k">from</span> <span class="s">"tombi-wasm-lsp"</span>;
+
+<span class="f">set_workspace_entries</span>([
+  {
+    uri: <span class="s">"file:///workspace/tombi.toml"</span>,
+    text: <span class="s">"[format]\nnewline = \"lf\"\n"</span>,
+  },
+]);</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<p>Use <code>kind: "directory"</code> for directory entries; file entries default to
+<code>kind: "file"</code>.</p>
+<h2 id="run-in-a-web-worker" class="group relative heading-with-anchor ">Run in a Web Worker</h2>
+<p>For a browser editor, run the Language Server in a Web Worker so parsing and
+diagnostics do not block the UI thread:</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-ts overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-ts" tabindex="-1"><span class="k">const</span> worker = <span class="k">new</span> <span class="t">Worker</span>(
+  <span class="k">new</span> <span class="t"><span class="p">URL</span></span>(<span class="s">"tombi-wasm-lsp/worker"</span>, globalThis._importMeta_.url),
+  { type: <span class="s">"module"</span> },
+);
+
+worker.<span class="f">addEventListener</span>(<span class="s">"message"</span>, (event) =&gt; {
+  <span class="k">if</span> (event.data.type === <span class="s">"ready"</span>) {
+    <span class="c">// Send LSP JSON-RPC messages with worker.postMessage(...).</span>
+  }
+});</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<p>The worker forwards messages through <code>postMessage</code> and emits <code>{ type: "ready" }</code>
+after the WASM module and Language Server have started. It accepts standard LSP
+JSON-RPC messages and mirrors opened <code>file:</code> documents into the in-memory workspace.</p><div class="mt-8 pt-8 border-t border-gray-200 flex justify-between"><a href="/tombi/v1.11.3/docs/wasm/tombi-wasm-lib" class="no-underline text-blue-500 hover:text-blue-600 inactive"><svg color="currentColor" fill="currentColor" stroke-width="0" style="overflow:visible" viewBox="0 0 24 24" size="12" height="12" width="12" xmlns="http://www.w3.org/2000/svg"><use href="/tombi/v1.11.3/icons.svg#icon-8"></use></svg> Formatter and Linter</a><a href="/tombi/v1.11.3/docs/editors" class="no-underline text-blue-500 hover:text-blue-600 ml-auto inactive">Editors <svg color="currentColor" fill="currentColor" stroke-width="0" style="overflow:visible" viewBox="0 0 24 24" size="12" height="12" width="12" xmlns="http://www.w3.org/2000/svg"><use href="/tombi/v1.11.3/icons.svg#icon-9"></use></svg></a></div></div></main></div></div></main></div></body></html>

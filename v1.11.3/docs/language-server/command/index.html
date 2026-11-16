@@ -1,0 +1,225 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title data-sm="00000001000000004000000200000000">Command</title><meta data-sm="00000001000000004000000200000010" name="description" content="Custom LSP commands for schema and configuration management."><meta data-sm="00000001000000004000000200000020" property="og:type" content="website"><meta data-sm="00000001000000004000000200000030" property="og:url" content="https://tombi-toml.github.io/tombi/v1.11.3/docs/language-server/command"><meta data-sm="00000001000000004000000200000040" property="og:title" content="Command"><meta data-sm="00000001000000004000000200000050" property="og:description" content="Custom LSP commands for schema and configuration management."><meta data-sm="00000001000000004000000200000060" property="og:image" content="https://raw.githubusercontent.com/tombi-toml/tombi/v1.11.3/docs/public/ogp.png"><meta data-sm="00000001000000004000000200000070" property="og:site_name" content="Tombi"><meta data-sm="00000001000000004000000200000080" property="twitter:card" content="summary_large_image"><meta data-sm="00000001000000004000000200000090" property="twitter:url" content="https://tombi-toml.github.io/tombi/v1.11.3/docs/language-server/command"><meta data-sm="000000010000000040000002000000a100" property="twitter:title" content="Command"><meta data-sm="000000010000000040000002000000a110" property="twitter:description" content="Custom LSP commands for schema and configuration management."><meta data-sm="000000010000000040000002000000a120" property="twitter:image" content="https://raw.githubusercontent.com/tombi-toml/tombi/v1.11.3/docs/public/ogp.png"><meta name="tombi-archive-base" content="/tombi/v1.11.3"><link rel="icon" href="https://raw.githubusercontent.com/tombi-toml/tombi/v1.11.3/docs/public/favicon.ico"><link rel="stylesheet" href="/tombi/v1.11.3/archive.css"><link rel="stylesheet" href="/tombi/common/v1/archive/archive-ui.css"><link rel="stylesheet" href="/tombi/common/v1/version-picker.css"><script src="/tombi/common/v1/archive/theme.js"></script><script type="module" src="/tombi/common/v1/archive/archive.js"></script><script defer src="/tombi/common/v1/version-picker.js"></script></head><body><div class="min-h-screen bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100"><div id="archive-header"></div><main class="flex-1 mt-20 pt-0"><div class="max-w-7xl mx-auto"><div class="flex w-full max-w-[100vw]"><nav id="archive-sidebar" class="w-[250px] shrink-0 h-screen sticky top-0 overflow-y-auto p-4 bg-[--color-bg-secondary] border-r border-[--color-border] md:block hidden" aria-label="Documentation"></nav><main tabindex="-1" class="flex-1 min-w-0 p-4 mdx-content min-h-screen max-w-full outline-none"><div class="max-w-full">
+<h1 id="command" class="group relative heading-with-anchor ">Command</h1>
+<p>Tombi Language Server provides custom LSP commands for advanced features like schema management and configuration updates.</p>
+<h2 id="available-commands" class="group relative heading-with-anchor ">Available Commands</h2>
+<h3 id="tombi-get-status" class="group relative heading-with-anchor ">tombi/getStatus</h3>
+<p>Get the current status of a TOML document, including its TOML version, configuration path, and whether it's ignored by file patterns.</p>
+<h4 id="request" class="group relative heading-with-anchor ">Request</h4>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-typescript overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-typescript" tabindex="-1"><span class="k">interface</span> <span class="t">GetStatusParams</span> {
+  textDocument: TextDocumentIdentifier;
+}</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h4 id="response" class="group relative heading-with-anchor ">Response</h4>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-typescript overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-typescript" tabindex="-1"><span class="k">interface</span> <span class="t">GetStatusResponse</span> {
+  tomlVersion: <span class="s">string</span>;
+  source: <span class="s">"comment"</span> | <span class="s">"schema"</span> | <span class="s">"config"</span> | <span class="s">"default"</span>;
+  configPath?: <span class="s">string</span>;
+  ignore?:
+    | <span class="s">"include-file-pattern-not-matched"</span>
+    | <span class="s">"exclude-file-pattern-matched"</span>
+    | <span class="s">"ignore-file-matched"</span>;
+  schema?: {
+    title?: <span class="s">string</span>;
+    description?: <span class="s">string</span>;
+    uri: <span class="s">string</span>;
+  }
+}</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<ul>
+<li><code>tomlVersion</code>: The TOML version used for the document (e.g., "v1.0.0", "v1.1.0")</li>
+<li><code>source</code>: Where the TOML version comes from:
+<ul>
+<li><code>comment</code>: From comment directive (<code>#:tombi toml-version = "v1.0.0"</code>)</li>
+<li><code>schema</code>: From schema directive (<code>#:schema "https://example.com/schema.json"</code>)</li>
+<li><code>config</code>: From configuration file</li>
+<li><code>default</code>: Default value</li>
+</ul>
+</li>
+<li><code>configPath</code>: Path to the configuration file used for this document</li>
+<li><code>ignore</code>: Reason why the document is ignored (if applicable)</li>
+<li><code>schema</code>: Schema information (if applicable)
+<ul>
+<li><code>title</code>: Title of the schema (in most cases, this matches the <code>name</code> field in the SchemaStore catalog)</li>
+<li><code>description</code>: Description of the schema (in most cases, this matches the <code>description</code> field in the SchemaStore catalog)</li>
+<li><code>uri</code>: URI of the schema</li>
+</ul>
+</li>
+</ul>
+<h4 id="example" class="group relative heading-with-anchor ">Example</h4>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-typescript overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-typescript" tabindex="-1"><span class="c">// Get the status of the current document</span>
+<span class="k">const</span> status = <span class="k">await</span> client.<span class="f">sendRequest</span>(<span class="s">"tombi/getStatus"</span>, {
+  textDocument: { uri: <span class="s">"file:///path/to/Cargo.toml"</span> }
+});
+
+<span class="s">console</span>.<span class="f">log</span>(<span class="s">`</span><span class="s">TOML Version: </span><span class="p"><span class="k">${</span>status.tomlVersion<span class="k">}</span></span><span class="s">`</span>);
+<span class="s">console</span>.<span class="f">log</span>(<span class="s">`</span><span class="s">Source: </span><span class="p"><span class="k">${</span>status.source<span class="k">}</span></span><span class="s">`</span>);
+<span class="k">if</span> (status.configPath) {
+  <span class="s">console</span>.<span class="f">log</span>(<span class="s">`</span><span class="s">Config Path: </span><span class="p"><span class="k">${</span>status.configPath<span class="k">}</span></span><span class="s">`</span>);
+}
+<span class="k">if</span> (status.ignore) {
+  <span class="s">console</span>.<span class="f">log</span>(<span class="s">`</span><span class="s">Ignored: </span><span class="p"><span class="k">${</span>status.ignore<span class="k">}</span></span><span class="s">`</span>);
+}</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<hr>
+<h3 id="tombi-get-toml-version" class="group relative heading-with-anchor ">tombi/getTomlVersion</h3>
+<p>Get the TOML version of a document and its source.</p>
+<h4 id="request" class="group relative heading-with-anchor ">Request</h4>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-typescript overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-typescript" tabindex="-1"><span class="k">interface</span> <span class="t">GetTomlVersionParams</span> {
+  textDocument: TextDocumentIdentifier;
+}</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h4 id="response" class="group relative heading-with-anchor ">Response</h4>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-typescript overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-typescript" tabindex="-1"><span class="k">interface</span> <span class="t">GetTomlVersionResponse</span> {
+  tomlVersion: <span class="s">string</span>;
+  source: <span class="s">"comment"</span> | <span class="s">"schema"</span> | <span class="s">"config"</span> | <span class="s">"default"</span>;
+}</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<ul>
+<li><code>tomlVersion</code>: The TOML version used for the document</li>
+<li><code>source</code>: Where the TOML version comes from (same as <code>tombi/getStatus</code>)</li>
+</ul>
+<h4 id="example" class="group relative heading-with-anchor ">Example</h4>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-typescript overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-typescript" tabindex="-1"><span class="c">// Get the TOML version of the current document</span>
+<span class="k">const</span> response = <span class="k">await</span> client.<span class="f">sendRequest</span>(<span class="s">"tombi/getTomlVersion"</span>, {
+  textDocument: { uri: <span class="s">"file:///path/to/pyproject.toml"</span> }
+});
+
+<span class="s">console</span>.<span class="f">log</span>(<span class="s">`</span><span class="s">TOML Version: </span><span class="p"><span class="k">${</span>response.tomlVersion<span class="k">}</span></span><span class="s">`</span>);
+<span class="s">console</span>.<span class="f">log</span>(<span class="s">`</span><span class="s">Source: </span><span class="p"><span class="k">${</span>response.source<span class="k">}</span></span><span class="s">`</span>);</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<hr>
+<h3 id="tombi-list-schemas" class="group relative heading-with-anchor ">tombi/listSchemas</h3>
+<p>List all available schemas known to the LSP server.</p>
+<h4 id="request" class="group relative heading-with-anchor ">Request</h4>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-typescript overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-typescript" tabindex="-1"><span class="k">interface</span> <span class="t">ListSchemasParams</span> {}</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h4 id="response" class="group relative heading-with-anchor ">Response</h4>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-typescript overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-typescript" tabindex="-1"><span class="k">interface</span> <span class="t">ListSchemasResponse</span> {
+  schemas: {
+    title?: <span class="s">string</span>;
+    description?: <span class="s">string</span>;
+    tomlVersion?: <span class="s">string</span>;
+    uri: <span class="s">string</span>;
+    catalogUri?: <span class="s">string</span>;
+  }[];
+}</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<ul>
+<li><code>title</code>: Title of the schema (in most cases, this matches the <code>name</code> field in the SchemaStore catalog)</li>
+<li><code>description</code>: Description of the schema (in most cases, this matches the <code>description</code> field in the SchemaStore catalog)</li>
+<li><code>tomlVersion</code>: TOML version required by the schema</li>
+<li><code>uri</code>: URI of the schema</li>
+<li><code>catalogUri</code>: URI in the schema catalog (e.g., Schema Store)</li>
+</ul>
+<h4 id="example" class="group relative heading-with-anchor ">Example</h4>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-typescript overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-typescript" tabindex="-1"><span class="c">// List all available schemas</span>
+<span class="k">const</span> response = <span class="k">await</span> client.<span class="f">sendRequest</span>(<span class="s">"tombi/listSchemas"</span>, {});
+
+<span class="s">console</span>.<span class="f">log</span>(<span class="s">`</span><span class="s">Found </span><span class="p"><span class="k">${</span>response.schemas.length<span class="k">}</span></span><span class="s"> schemas</span><span class="s">`</span>);
+response.schemas.<span class="f">forEach</span>(schema =&gt; {
+  <span class="s">console</span>.<span class="f">log</span>(<span class="s">`</span><span class="s">- </span><span class="p"><span class="k">${</span>schema.title || <span class="s">'Untitled'</span><span class="k">}</span></span><span class="s">: </span><span class="p"><span class="k">${</span>schema.uri<span class="k">}</span></span><span class="s">`</span>);
+  <span class="k">if</span> (schema.tomlVersion) {
+    <span class="s">console</span>.<span class="f">log</span>(<span class="s">`</span><span class="s">  TOML Version: </span><span class="p"><span class="k">${</span>schema.tomlVersion<span class="k">}</span></span><span class="s">`</span>);
+  }
+});</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<hr>
+<h3 id="tombi-update-schema" class="group relative heading-with-anchor ">tombi/updateSchema</h3>
+<p>Update a schema from its remote source. This is useful when you want to refresh the schema without restarting the language server.</p>
+<h4 id="request" class="group relative heading-with-anchor ">Request</h4>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-typescript overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-typescript" tabindex="-1"><span class="k">interface</span> <span class="t">UpdateSchemaParams</span> {
+  textDocument: TextDocumentIdentifier;
+}</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<p>The <code>textDocument</code> should point to a schema file URI.</p>
+<h4 id="response" class="group relative heading-with-anchor ">Response</h4>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-typescript overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-typescript" tabindex="-1"><span class="k">type</span> <span class="t">UpdateSchemaResponse</span> = <span class="s">boolean</span>;</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<p>Returns <code>true</code> if the schema was updated successfully, <code>false</code> otherwise.</p>
+<h4 id="example" class="group relative heading-with-anchor ">Example</h4>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-typescript overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-typescript" tabindex="-1"><span class="c">// Update a schema from its remote source</span>
+<span class="k">const</span> updated = <span class="k">await</span> client.<span class="f">sendRequest</span>(<span class="s">"tombi/updateSchema"</span>, {
+  textDocument: { uri: <span class="s">"https://www.schemastore.org/cargo.json"</span> }
+});
+
+<span class="k">if</span> (updated) {
+  <span class="s">console</span>.<span class="f">log</span>(<span class="s">"Schema updated successfully"</span>);
+} <span class="k">else</span> {
+  <span class="s">console</span>.<span class="f">log</span>(<span class="s">"Schema was not updated (already up-to-date or error occurred)"</span>);
+}</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<hr>
+<h3 id="tombi-update-config" class="group relative heading-with-anchor ">tombi/updateConfig</h3>
+<p>Update the configuration file. This command reloads the configuration from disk and applies it to the language server.</p>
+<h4 id="request" class="group relative heading-with-anchor ">Request</h4>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-typescript overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-typescript" tabindex="-1"><span class="k">type</span> <span class="t">UpdateConfigParams</span> = TextDocumentIdentifier;</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<p>The identifier should point to a Tombi configuration file (e.g., <code>tombi.toml</code>).</p>
+<h4 id="response" class="group relative heading-with-anchor ">Response</h4>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-typescript overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-typescript" tabindex="-1"><span class="k">type</span> <span class="t">UpdateConfigResponse</span> = <span class="s">boolean</span>;</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<p>Returns <code>true</code> if the configuration was updated successfully, <code>false</code> otherwise.</p>
+<h4 id="example" class="group relative heading-with-anchor ">Example</h4>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-typescript overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-typescript" tabindex="-1"><span class="c">// Update the configuration file</span>
+<span class="k">const</span> updated = <span class="k">await</span> client.<span class="f">sendRequest</span>(<span class="s">"tombi/updateConfig"</span>, {
+  uri: <span class="s">"file:///path/to/project/tombi.toml"</span>
+});
+
+<span class="k">if</span> (updated) {
+  <span class="s">console</span>.<span class="f">log</span>(<span class="s">"Configuration updated successfully"</span>);
+} <span class="k">else</span> {
+  <span class="s">console</span>.<span class="f">log</span>(<span class="s">"Configuration was not updated"</span>);
+}</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<hr>
+<h3 id="tombi-associate-schema" class="group relative heading-with-anchor ">tombi/associateSchema</h3>
+<p>Associate a schema with file match patterns. This is primarily used by editor extensions to dynamically register schemas.</p>
+<h4 id="request" class="group relative heading-with-anchor ">Request</h4>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-typescript overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-typescript" tabindex="-1"><span class="k">interface</span> <span class="t">AssociateSchemaParams</span> {
+  title?: <span class="s">string</span>;
+  description?: <span class="s">string</span>;
+  uri: <span class="s">string</span>;
+  fileMatch: <span class="s">string</span>[];
+  tomlVersion?: <span class="s">string</span>;
+  force?: <span class="s">boolean</span>;
+}</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<ul>
+<li><code>title</code>: Title of the schema (in most cases, this matches the <code>name</code> field in the SchemaStore catalog)</li>
+<li><code>description</code>: Description of the schema (in most cases, this matches the <code>description</code> field in the SchemaStore catalog)</li>
+<li><code>uri</code>: URI of the schema to associate</li>
+<li><code>fileMatch</code>: Array of glob patterns for files that should use this schema</li>
+<li><code>tomlVersion</code>: TOML version required by the schema</li>
+<li><code>force</code>: Determines where in the schema list the associated schema is inserted. Default is <code>false</code>.
+<ul>
+<li>If <code>true</code>, the schema is inserted at the <strong>beginning</strong> (highest priority, takes precedence over catalog schemas).</li>
+<li>If <code>false</code>, the schema is inserted at the <strong>end</strong> (lowest priority).</li>
+</ul>
+</li>
+</ul>
+<h4 id="response" class="group relative heading-with-anchor ">Response</h4>
+<p>This command has no return value (notification-style).</p>
+<h4 id="example" class="group relative heading-with-anchor ">Example</h4>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-typescript overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-typescript" tabindex="-1"><span class="c">// Associate a schema with file patterns</span>
+<span class="k">await</span> client.<span class="f">sendRequest</span>(<span class="s">"tombi/associateSchema"</span>, {
+  title: <span class="s">"Custom Application Config"</span>,
+  description: <span class="s">"Schema for application configuration files"</span>,
+  uri: <span class="s">"https://example.com/schemas/app-config.json"</span>,
+  fileMatch: [<span class="s">"**/config.toml"</span>, <span class="s">"**/app.toml"</span>],
+  tomlVersion: <span class="s">"v1.0.0"</span>,
+  force: <span class="k">true</span> <span class="c">// This schema takes precedence over catalog schemas</span>
+});
+
+<span class="s">console</span>.<span class="f">log</span>(<span class="s">"Schema associated successfully"</span>);</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<p>VSCode extensions can also contribute schema associations via <code>package.json</code>:</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-json overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-json" tabindex="-1">{
+  <span class="p">"contributes"</span>: {
+    <span class="p">"tomlValidation"</span>: [
+      {
+        <span class="p">"regexMatch"</span>: <span class="s">"^.*foo.toml$"</span>,
+        <span class="p">"url"</span>: <span class="s">"https://www.schemastore.org/foo.json"</span>
+      }
+    ]
+  }
+}</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<hr>
+<h3 id="tombi-refresh-cache" class="group relative heading-with-anchor ">tombi/refreshCache</h3>
+<p>Refresh the schema cache. This command clears and rebuilds the internal schema cache.</p>
+<h4 id="request" class="group relative heading-with-anchor ">Request</h4>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-typescript overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-typescript" tabindex="-1"><span class="k">interface</span> <span class="t">RefreshCacheParams</span> {}</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h4 id="response" class="group relative heading-with-anchor ">Response</h4>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-typescript overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-typescript" tabindex="-1"><span class="k">type</span> <span class="t">RefreshCacheResponse</span> = <span class="s">boolean</span>;</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<p>Returns <code>true</code> if the cache was refreshed successfully, <code>false</code> if there was no cache to refresh.</p>
+<h4 id="example" class="group relative heading-with-anchor ">Example</h4>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-typescript overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-typescript" tabindex="-1"><span class="c">// Refresh the schema cache</span>
+<span class="k">const</span> refreshed = <span class="k">await</span> client.<span class="f">sendRequest</span>(<span class="s">"tombi/refreshCache"</span>, {});
+
+<span class="k">if</span> (refreshed) {
+  <span class="s">console</span>.<span class="f">log</span>(<span class="s">"Cache refreshed successfully"</span>);
+} <span class="k">else</span> {
+  <span class="s">console</span>.<span class="f">log</span>(<span class="s">"No cache to refresh"</span>);
+}</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div><div class="mt-8 pt-8 border-t border-gray-200 flex justify-between"><a href="/tombi/v1.11.3/docs/language-server/code-action" class="no-underline text-blue-500 hover:text-blue-600 inactive"><svg color="currentColor" fill="currentColor" stroke-width="0" style="overflow:visible" viewBox="0 0 24 24" size="12" height="12" width="12" xmlns="http://www.w3.org/2000/svg"><use href="/tombi/v1.11.3/icons.svg#icon-8"></use></svg> Code Action</a><a href="/tombi/v1.11.3/docs/cli" class="no-underline text-blue-500 hover:text-blue-600 ml-auto inactive">CLI <svg color="currentColor" fill="currentColor" stroke-width="0" style="overflow:visible" viewBox="0 0 24 24" size="12" height="12" width="12" xmlns="http://www.w3.org/2000/svg"><use href="/tombi/v1.11.3/icons.svg#icon-9"></use></svg></a></div></div></main></div></div></main></div></body></html>

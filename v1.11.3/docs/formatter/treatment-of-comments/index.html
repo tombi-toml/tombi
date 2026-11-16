@@ -1,0 +1,182 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title data-sm="00000001000000004000000200000000">Treatment of Comments</title><meta data-sm="00000001000000004000000200000010" name="description" content="How Tombi handles comments during formatting."><meta data-sm="00000001000000004000000200000020" property="og:type" content="website"><meta data-sm="00000001000000004000000200000030" property="og:url" content="https://tombi-toml.github.io/tombi/v1.11.3/docs/formatter/treatment-of-comments"><meta data-sm="00000001000000004000000200000040" property="og:title" content="Treatment of Comments"><meta data-sm="00000001000000004000000200000050" property="og:description" content="How Tombi handles comments during formatting."><meta data-sm="00000001000000004000000200000060" property="og:image" content="https://raw.githubusercontent.com/tombi-toml/tombi/v1.11.3/docs/public/ogp.png"><meta data-sm="00000001000000004000000200000070" property="og:site_name" content="Tombi"><meta data-sm="00000001000000004000000200000080" property="twitter:card" content="summary_large_image"><meta data-sm="00000001000000004000000200000090" property="twitter:url" content="https://tombi-toml.github.io/tombi/v1.11.3/docs/formatter/treatment-of-comments"><meta data-sm="000000010000000040000002000000a100" property="twitter:title" content="Treatment of Comments"><meta data-sm="000000010000000040000002000000a110" property="twitter:description" content="How Tombi handles comments during formatting."><meta data-sm="000000010000000040000002000000a120" property="twitter:image" content="https://raw.githubusercontent.com/tombi-toml/tombi/v1.11.3/docs/public/ogp.png"><meta name="tombi-archive-base" content="/tombi/v1.11.3"><link rel="icon" href="https://raw.githubusercontent.com/tombi-toml/tombi/v1.11.3/docs/public/favicon.ico"><link rel="stylesheet" href="/tombi/v1.11.3/archive.css"><link rel="stylesheet" href="/tombi/common/v1/archive/archive-ui.css"><link rel="stylesheet" href="/tombi/common/v1/version-picker.css"><script src="/tombi/common/v1/archive/theme.js"></script><script type="module" src="/tombi/common/v1/archive/archive.js"></script><script defer src="/tombi/common/v1/version-picker.js"></script></head><body><div class="min-h-screen bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100"><div id="archive-header"></div><main class="flex-1 mt-20 pt-0"><div class="max-w-7xl mx-auto"><div class="flex w-full max-w-[100vw]"><nav id="archive-sidebar" class="w-[250px] shrink-0 h-screen sticky top-0 overflow-y-auto p-4 bg-[--color-bg-secondary] border-r border-[--color-border] md:block hidden" aria-label="Documentation"></nav><main tabindex="-1" class="flex-1 min-w-0 p-4 mdx-content min-h-screen max-w-full outline-none"><div class="max-w-full">
+<h1 id="treatment-of-comments" class="group relative heading-with-anchor ">Treatment of Comments</h1>
+<p>Tombi uses a group-based comment model to keep formatting stable and auto sorting predictable.</p>
+<p>This page explains the behavior in plain TOML examples, without implementation details.</p>
+<h2 id="quick-summary" class="group relative heading-with-anchor ">Quick Summary</h2>
+<ul>
+<li>Tombi treats blank-line-separated comment blocks as meaningful boundaries.</li>
+<li>Sorting happens inside each group, not across group boundaries.</li>
+<li><code># tombi:</code> directives only control formatter/linter rules when placed in a position that has a clear target.</li>
+</ul>
+<h2 id="comment-roles-in-toml" class="group relative heading-with-anchor ">Comment Roles in TOML</h2>
+<h3 id="leading-comments" class="group relative heading-with-anchor ">Leading comments</h3>
+<p>Comments directly attached to the item below.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># leading comment 1</span>
+<span class="c"># leading comment 2</span>
+<span class="p">key</span> = <span class="s">"value"</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="trailing-comments" class="group relative heading-with-anchor ">Trailing comments</h3>
+<p>A comment at the end of the same line.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="p">key</span> = <span class="s">"value"</span> <span class="c"># trailing comment</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="dangling-comment-groups" class="group relative heading-with-anchor ">Dangling comment groups</h3>
+<p>Comment blocks separated by blank lines. These create visual/logical boundaries.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># dangling comment group A line 1</span>
+<span class="c"># dangling comment group A line 2</span>
+
+<span class="c"># dangling comment group B line 1</span>
+<span class="c"># dangling comment group B line 2</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h2 id="blank-lines-define-boundaries" class="group relative heading-with-anchor ">Blank Lines Define Boundaries</h2>
+<p>A blank line is treated as a boundary between groups.</p>
+<p>That boundary is important because Tombi does not move values/keys across it when sorting.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[<span class="t">tool.demo</span>]
+<span class="p">b</span> = <span class="n">2</span>
+<span class="p">a</span> = <span class="n">1</span>
+
+<span class="p">z</span> = <span class="n">26</span>
+<span class="p">y</span> = <span class="n">25</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<p>Tombi may reorder <code>b/a</code> and <code>z/y</code> inside each group, but it does not merge or cross the boundary.</p>
+<h2 id="where-tombi-directives-are-effective" class="group relative heading-with-anchor ">Where <code># tombi:</code> Directives Are Effective</h2>
+<p>A simple rule:</p>
+<ul>
+<li>Effective: before the first item of the current container.</li>
+<li>Not effective for rule control: between groups after items already appeared.</li>
+</ul>
+<p>Below are concrete examples.</p>
+<h3 id="root-level-example" class="group relative heading-with-anchor ">Root-level example</h3>
+<p>Effective at root level (before first key):</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># root directive: effective for the root table</span>
+<span class="c"># tombi: format.rules.table-keys-order = "ascending"</span>
+
+<span class="p">b</span> = <span class="n">2</span>
+<span class="p">a</span> = <span class="n">1</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<p>Not effective at root level (appears after root items started):</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="p">b</span> = <span class="n">2</span>
+<span class="p">a</span> = <span class="n">1</span>
+
+<span class="c"># root group-boundary directive:</span>
+<span class="c"># interpreted as an empty key-value group directive</span>
+<span class="c"># (not used for rule control)</span>
+<span class="c"># tombi: format.rules.table-keys-order = "ascending"</span>
+
+<span class="p">z</span> = <span class="n">26</span>
+<span class="p">y</span> = <span class="n">25</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<p>In this position, Tombi interprets the directive as belonging to an <strong>empty key-value group</strong> at the boundary.<br>
+So it is recognized by tooling, but it does not affect formatter/linter rule control.</p>
+<h3 id="standard-table-example" class="group relative heading-with-anchor ">Standard table example</h3>
+<p>Effective for <code>[package]</code> (before first key in that table):</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[<span class="t">package</span>]
+<span class="c"># package directive: effective for this table</span>
+<span class="c"># tombi: format.rules.table-keys-order = "ascending"</span>
+
+<span class="p">name</span> = <span class="s">"demo"</span>
+<span class="p">version</span> = <span class="s">"1.0.0"</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<p>Not effective for <code>[package]</code> (between table groups after keys already appeared):</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[<span class="t">package</span>]
+<span class="p">name</span> = <span class="s">"demo"</span>
+<span class="p">version</span> = <span class="s">"1.0.0"</span>
+
+<span class="c"># package group-boundary directive: not used for rule control</span>
+<span class="c"># tombi: format.rules.table-keys-order = "ascending"</span>
+
+<span class="p">description</span> = <span class="s">"example"</span>
+<span class="p">license</span> = <span class="s">"MIT"</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="array-example" class="group relative heading-with-anchor ">Array example</h3>
+<p>Effective for the array (before first value):</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="p">items</span> = [
+  <span class="c"># array directive: effective for this array</span>
+  <span class="c"># tombi: format.rules.array-values-order = "ascending"</span>
+
+  <span class="s">"banana"</span>,
+  <span class="s">"apple"</span>,
+]</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<p>Not effective for the array (between value groups after values already appeared):</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="p">items</span> = [
+  <span class="s">"banana"</span>,
+  <span class="s">"apple"</span>,
+
+  <span class="c"># array group-boundary directive: not used for rule control</span>
+  <span class="c"># tombi: format.rules.array-values-order = "ascending"</span>
+
+  <span class="s">"date"</span>,
+  <span class="s">"cherry"</span>,
+]</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="inline-table-example" class="group relative heading-with-anchor ">Inline table example</h3>
+<p>Effective for the inline table (before first key-value in the inline table):</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="p">point</span> = {
+  <span class="c"># inline-table directive: effective for this inline table</span>
+  <span class="c"># tombi: format.rules.table-keys-order = "ascending"</span>
+
+  <span class="p">y</span> = <span class="n">20</span>,
+  <span class="p">x</span> = <span class="n">10</span>,
+}</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<p>Not effective for the inline table (between groups after key-values already appeared):</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="p">point</span> = {
+  <span class="p">y</span> = <span class="n">20</span>,
+  <span class="p">x</span> = <span class="n">10</span>,
+
+  <span class="c"># inline-table group-boundary directive: not used for rule control</span>
+  <span class="c"># tombi: format.rules.table-keys-order = "ascending"</span>
+
+  <span class="p">z</span> = <span class="n">30</span>,
+}</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="array-of-tables-example" class="group relative heading-with-anchor ">Array-of-tables example</h3>
+<p>Effective for each <code>[[servers]]</code> block only when placed before that block's first key:</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[[<span class="t">servers</span>]]
+<span class="c"># array-of-table directive: effective for this table item</span>
+<span class="c"># tombi: format.rules.table-keys-order = "ascending"</span>
+
+<span class="p">port</span> = <span class="n">8080</span>
+<span class="p">host</span> = <span class="s">"localhost"</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<p>Not effective when placed between groups after keys already appeared:</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[[<span class="t">servers</span>]]
+<span class="p">port</span> = <span class="n">8080</span>
+<span class="p">host</span> = <span class="s">"localhost"</span>
+
+<span class="c"># array-of-table group-boundary directive: not used for rule control</span>
+<span class="c"># tombi: format.rules.table-keys-order = "ascending"</span>
+
+<span class="p">protocol</span> = <span class="s">"http"</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h2 id="what-happens-to-non-effective-directives" class="group relative heading-with-anchor ">What Happens to Non-Effective Directives?</h2>
+<p>When a directive is placed at a group boundary (not rule-effective):</p>
+<ul>
+<li>Formatter rule control: no available rules in this position</li>
+<li>Linter rule control: no available rules in this position</li>
+<li>Editor support (completion/hover/validation): still available</li>
+</ul>
+<p>So you still get language-server assistance, but the directive does not change formatting/linting behavior.</p>
+<h2 id="one-annotated-walkthrough" class="group relative heading-with-anchor ">One Annotated Walkthrough</h2>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># [root directive: effective for root]</span>
+<span class="c"># tombi: format.rules.table-keys-order = "ascending"</span>
+
+<span class="c"># [root dangling comment group]</span>
+
+[<span class="t">package</span>]
+<span class="c"># [table directive: effective for package table]</span>
+<span class="c"># tombi: format.rules.table-keys-order = "ascending"</span>
+
+<span class="p">name</span> = <span class="s">"demo"</span>
+<span class="p">version</span> = <span class="s">"1.0.0"</span>
+
+<span class="c"># [table group-boundary directive: not effective for rule control]</span>
+<span class="c"># tombi: format.rules.table-keys-order = "descending"</span>
+
+<span class="p">description</span> = <span class="s">"example"</span>
+
+<span class="p">items</span> = [
+  <span class="c"># [array directive: effective for this array]</span>
+  <span class="c"># tombi: format.rules.array-values-order = "ascending"</span>
+
+  <span class="s">"b"</span>,
+  <span class="s">"a"</span>,
+
+  <span class="c"># [array group-boundary directive: not effective for rule control]</span>
+  <span class="c"># tombi: format.rules.array-values-order = "descending"</span>
+
+  <span class="s">"d"</span>,
+  <span class="s">"c"</span>,
+]</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<p>Reading rule:</p>
+<ul>
+<li>Comments labeled "directive: effective" are used for rule control.</li>
+<li>Comments labeled "group-boundary directive" are treated as boundary comments and are not used for formatter/linter rule control.</li>
+</ul>
+<p>For directive syntax and available options, see <a href="/tombi/v1.11.3/docs/comment-directive/">Comment Directive</a>.</p><div class="mt-8 pt-8 border-t border-gray-200 flex justify-between"><a href="/tombi/v1.11.3/docs/formatter/magic-trailing-comma" class="no-underline text-blue-500 hover:text-blue-600 inactive"><svg color="currentColor" fill="currentColor" stroke-width="0" style="overflow:visible" viewBox="0 0 24 24" size="12" height="12" width="12" xmlns="http://www.w3.org/2000/svg"><use href="/tombi/v1.11.3/icons.svg#icon-8"></use></svg> Magic Trailing Comma</a><a href="/tombi/v1.11.3/docs/formatter/json-schema" class="no-underline text-blue-500 hover:text-blue-600 ml-auto inactive">Json Schema <svg color="currentColor" fill="currentColor" stroke-width="0" style="overflow:visible" viewBox="0 0 24 24" size="12" height="12" width="12" xmlns="http://www.w3.org/2000/svg"><use href="/tombi/v1.11.3/icons.svg#icon-9"></use></svg></a></div></div></main></div></div></main></div></body></html>

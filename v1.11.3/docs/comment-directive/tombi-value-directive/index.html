@@ -1,0 +1,602 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title data-sm="00000001000000004000000200000000">Tombi Value Directive</title><meta data-sm="00000001000000004000000200000010" name="description" content="Control value-level configuration via comments."><meta data-sm="00000001000000004000000200000020" property="og:type" content="website"><meta data-sm="00000001000000004000000200000030" property="og:url" content="https://tombi-toml.github.io/tombi/v1.11.3/docs/comment-directive/tombi-value-directive"><meta data-sm="00000001000000004000000200000040" property="og:title" content="Tombi Value Directive"><meta data-sm="00000001000000004000000200000050" property="og:description" content="Control value-level configuration via comments."><meta data-sm="00000001000000004000000200000060" property="og:image" content="https://raw.githubusercontent.com/tombi-toml/tombi/v1.11.3/docs/public/ogp.png"><meta data-sm="00000001000000004000000200000070" property="og:site_name" content="Tombi"><meta data-sm="00000001000000004000000200000080" property="twitter:card" content="summary_large_image"><meta data-sm="00000001000000004000000200000090" property="twitter:url" content="https://tombi-toml.github.io/tombi/v1.11.3/docs/comment-directive/tombi-value-directive"><meta data-sm="000000010000000040000002000000a100" property="twitter:title" content="Tombi Value Directive"><meta data-sm="000000010000000040000002000000a110" property="twitter:description" content="Control value-level configuration via comments."><meta data-sm="000000010000000040000002000000a120" property="twitter:image" content="https://raw.githubusercontent.com/tombi-toml/tombi/v1.11.3/docs/public/ogp.png"><meta name="tombi-archive-base" content="/tombi/v1.11.3"><link rel="icon" href="https://raw.githubusercontent.com/tombi-toml/tombi/v1.11.3/docs/public/favicon.ico"><link rel="stylesheet" href="/tombi/v1.11.3/archive.css"><link rel="stylesheet" href="/tombi/common/v1/archive/archive-ui.css"><link rel="stylesheet" href="/tombi/common/v1/version-picker.css"><script src="/tombi/common/v1/archive/theme.js"></script><script type="module" src="/tombi/common/v1/archive/archive.js"></script><script defer src="/tombi/common/v1/version-picker.js"></script></head><body><div class="min-h-screen bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100"><div id="archive-header"></div><main class="flex-1 mt-20 pt-0"><div class="max-w-7xl mx-auto"><div class="flex w-full max-w-[100vw]"><nav id="archive-sidebar" class="w-[250px] shrink-0 h-screen sticky top-0 overflow-y-auto p-4 bg-[--color-bg-secondary] border-r border-[--color-border] md:block hidden" aria-label="Documentation"></nav><main tabindex="-1" class="flex-1 min-w-0 p-4 mdx-content min-h-screen max-w-full outline-none"><div class="max-w-full">
+
+<h1 id="tombi-value-directive" class="group relative heading-with-anchor ">Tombi Value Directive</h1>
+<p><code># tombi:</code> value comment directives are comments that apply to a specific value.</p>
+<h2 id="available-options" class="group relative heading-with-anchor ">Available Options</h2>
+<ul>
+<li><a href="#format-rules">format</a>
+<ul>
+<li><a href="#format-rules">format.rules</a>
+<ul>
+<li><a href="#format-rules-table-keys-order">format.rules.table-keys-order</a></li>
+<li><a href="#format-rules-array-values-order">format.rules.array-values-order</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#lint-rules">lint</a>
+<ul>
+<li><a href="#lint-rules">lint.rules</a>
+<ul>
+<li><a href="#lint-rules-schema-resolution">lint.rules.schema-resolution</a>
+<ul>
+<li><a href="#lint-rules-schema-resolution-disabled">lint.rules.schema-resolution.disabled</a></li>
+</ul>
+</li>
+<li><a href="#lint-rules-unused-noqa">lint.rules.unused-noqa</a>
+<ul>
+<li><a href="#lint-rules-unused-noqa-disabled">lint.rules.unused-noqa.disabled</a></li>
+</ul>
+</li>
+<li><a href="#lint-rules-type-mismatch">lint.rules.type-mismatch</a>
+<ul>
+<li><a href="#lint-rules-type-mismatch-disabled">lint.rules.type-mismatch.disabled</a></li>
+</ul>
+</li>
+<li><a href="#lint-rules-const-value">lint.rules.const-value</a>
+<ul>
+<li><a href="#lint-rules-const-value-disabled">lint.rules.const-value.disabled</a></li>
+</ul>
+</li>
+<li><a href="#lint-rules-enum">lint.rules.enum</a>
+<ul>
+<li><a href="#lint-rules-enum-disabled">lint.rules.enum.disabled</a></li>
+</ul>
+</li>
+<li><a href="#lint-rules-deprecated">lint.rules.deprecated</a>
+<ul>
+<li><a href="#lint-rules-deprecated-disabled">lint.rules.deprecated.disabled</a></li>
+</ul>
+</li>
+<li><a href="#lint-rules-one-of-multiple-match">lint.rules.one-of-multiple-match</a>
+<ul>
+<li><a href="#lint-rules-one-of-multiple-match-disabled">lint.rules.one-of-multiple-match.disabled</a></li>
+</ul>
+</li>
+<li><a href="#lint-rules-not-schema-match">lint.rules.not-schema-match</a>
+<ul>
+<li><a href="#lint-rules-not-schema-match-disabled">lint.rules.not-schema-match.disabled</a></li>
+</ul>
+</li>
+<li><a href="#lint-rules-key-empty">lint.rules.key-empty</a>
+<ul>
+<li><a href="#lint-rules-key-empty-disabled">lint.rules.key-empty.disabled</a></li>
+</ul>
+</li>
+<li><a href="#lint-rules-key-not-allowed">lint.rules.key-not-allowed</a>
+<ul>
+<li><a href="#lint-rules-key-not-allowed-disabled">lint.rules.key-not-allowed.disabled</a></li>
+</ul>
+</li>
+<li><a href="#lint-rules-key-pattern">lint.rules.key-pattern</a>
+<ul>
+<li><a href="#lint-rules-key-pattern-disabled">lint.rules.key-pattern.disabled</a></li>
+</ul>
+</li>
+<li><a href="#lint-rules-dotted-keys-out-of-order">lint.rules.dotted-keys-out-of-order</a>
+<ul>
+<li><a href="#lint-rules-dotted-keys-out-of-order-disabled">lint.rules.dotted-keys-out-of-order.disabled</a></li>
+</ul>
+</li>
+<li><a href="#lint-rules-tables-out-of-order">lint.rules.tables-out-of-order</a>
+<ul>
+<li><a href="#lint-rules-tables-out-of-order-disabled">lint.rules.tables-out-of-order.disabled</a></li>
+</ul>
+</li>
+<li><a href="#lint-rules-table-key-required">lint.rules.table-key-required</a>
+<ul>
+<li><a href="#lint-rules-table-key-required-disabled">lint.rules.table-key-required.disabled</a></li>
+</ul>
+</li>
+<li><a href="#lint-rules-table-max-keys">lint.rules.table-max-keys</a>
+<ul>
+<li><a href="#lint-rules-table-max-keys-disabled">lint.rules.table-max-keys.disabled</a></li>
+</ul>
+</li>
+<li><a href="#lint-rules-table-min-keys">lint.rules.table-min-keys</a>
+<ul>
+<li><a href="#lint-rules-table-min-keys-disabled">lint.rules.table-min-keys.disabled</a></li>
+</ul>
+</li>
+<li><a href="#lint-rules-array-unique-values">lint.rules.array-unique-values</a>
+<ul>
+<li><a href="#lint-rules-array-unique-values-disabled">lint.rules.array-unique-values.disabled</a></li>
+</ul>
+</li>
+<li><a href="#lint-rules-array-max-values">lint.rules.array-max-values</a>
+<ul>
+<li><a href="#lint-rules-array-max-values-disabled">lint.rules.array-max-values.disabled</a></li>
+</ul>
+</li>
+<li><a href="#lint-rules-array-min-values">lint.rules.array-min-values</a>
+<ul>
+<li><a href="#lint-rules-array-min-values-disabled">lint.rules.array-min-values.disabled</a></li>
+</ul>
+</li>
+<li><a href="#lint-rules-integer-maximum">lint.rules.integer-maximum</a>
+<ul>
+<li><a href="#lint-rules-integer-maximum-disabled">lint.rules.integer-maximum.disabled</a></li>
+</ul>
+</li>
+<li><a href="#lint-rules-integer-minimum">lint.rules.integer-minimum</a>
+<ul>
+<li><a href="#lint-rules-integer-minimum-disabled">lint.rules.integer-minimum.disabled</a></li>
+</ul>
+</li>
+<li><a href="#lint-rules-integer-exclusive-maximum">lint.rules.integer-exclusive-maximum</a>
+<ul>
+<li><a href="#lint-rules-integer-exclusive-maximum-disabled">lint.rules.integer-exclusive-maximum.disabled</a></li>
+</ul>
+</li>
+<li><a href="#lint-rules-integer-exclusive-minimum">lint.rules.integer-exclusive-minimum</a>
+<ul>
+<li><a href="#lint-rules-integer-exclusive-minimum-disabled">lint.rules.integer-exclusive-minimum.disabled</a></li>
+</ul>
+</li>
+<li><a href="#lint-rules-integer-multiple-of">lint.rules.integer-multiple-of</a>
+<ul>
+<li><a href="#lint-rules-integer-multiple-of-disabled">lint.rules.integer-multiple-of.disabled</a></li>
+</ul>
+</li>
+<li><a href="#lint-rules-float-maximum">lint.rules.float-maximum</a>
+<ul>
+<li><a href="#lint-rules-float-maximum-disabled">lint.rules.float-maximum.disabled</a></li>
+</ul>
+</li>
+<li><a href="#lint-rules-float-minimum">lint.rules.float-minimum</a>
+<ul>
+<li><a href="#lint-rules-float-minimum-disabled">lint.rules.float-minimum.disabled</a></li>
+</ul>
+</li>
+<li><a href="#lint-rules-float-exclusive-maximum">lint.rules.float-exclusive-maximum</a>
+<ul>
+<li><a href="#lint-rules-float-exclusive-maximum-disabled">lint.rules.float-exclusive-maximum.disabled</a></li>
+</ul>
+</li>
+<li><a href="#lint-rules-float-exclusive-minimum">lint.rules.float-exclusive-minimum</a>
+<ul>
+<li><a href="#lint-rules-float-exclusive-minimum-disabled">lint.rules.float-exclusive-minimum.disabled</a></li>
+</ul>
+</li>
+<li><a href="#lint-rules-float-multiple-of">lint.rules.float-multiple-of</a>
+<ul>
+<li><a href="#lint-rules-float-multiple-of-disabled">lint.rules.float-multiple-of.disabled</a></li>
+</ul>
+</li>
+<li><a href="#lint-rules-string-max-length">lint.rules.string-max-length</a>
+<ul>
+<li><a href="#lint-rules-string-max-length-disabled">lint.rules.string-max-length.disabled</a></li>
+</ul>
+</li>
+<li><a href="#lint-rules-string-min-length">lint.rules.string-min-length</a>
+<ul>
+<li><a href="#lint-rules-string-min-length-disabled">lint.rules.string-min-length.disabled</a></li>
+</ul>
+</li>
+<li><a href="#lint-rules-string-format">lint.rules.string-format</a>
+<ul>
+<li><a href="#lint-rules-string-format-disabled">lint.rules.string-format.disabled</a></li>
+</ul>
+</li>
+<li><a href="#lint-rules-string-pattern">lint.rules.string-pattern</a>
+<ul>
+<li><a href="#lint-rules-string-pattern-disabled">lint.rules.string-pattern.disabled</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="format-rules" class="group relative heading-with-anchor ">Format Rules</h2>
+<p>Value directives can be used to control automatic sorting behavior.
+This is especially useful as a temporary workaround when the <a href="https://json-schema.org">JSON Schema</a> provided by <a href="https://www.schemastore.org">Schema Store</a> contains errors,
+or when you want to customize sorting for configuration files that do not have an associated JSON Schema.
+By specifying sorting rules directly in comments, you can enable or disable automatic sorting according to your needs.</p>
+<div class="my-4 p-4 bg-blue-100 border-l-4 border-blue-500 rounded-lg dark:bg-tombi-900 dark:border-blue-400"><div class="flex items-center gap-2 font-medium text-blue-800 dark:text-blue-200 mb-2"><span>🗒️</span><span>Note</span></div><div class="text-gray-700 dark:text-gray-300"><p>The option corresponding to <code>x-tombi-table-keys-order-by</code> is not supported by comment directives.</p></div></div>
+<h3 id="format-rules-table-keys-order" class="group relative heading-with-anchor ">format.rules.table-keys-order</h3>
+<p>Controls the sorting method of table keys.</p>
+<ul>
+<li><strong>Type</strong>: <code>String ^ { disabled = true }</code></li>
+<li><strong>Values</strong>:
+<ul>
+<li><code>"ascending"</code> - Sort in ascending order</li>
+<li><code>"descending"</code> - Sort in descending order</li>
+<li><code>"version-sort"</code> - Sort by version based on the <a href="https://doc.rust-lang.org/nightly/style-guide/#sorting">Rust style guide</a></li>
+<li><code>{ disabled = true }</code> - Disable sorting</li>
+</ul>
+</li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># Disable sorting</span>
+<span class="c"># tombi: format.rules.table-keys-order.disabled = true</span>
+[<span class="t">project</span>]
+<span class="p">name</span> = <span class="s">"tombi"</span>
+<span class="p">readme</span> = <span class="s">"README.md"</span>
+<span class="p">version</span> = <span class="s">"0.1.0"</span>
+
+<span class="c"># Enable ascending sort</span>
+<span class="c"># tombi: format.rules.table-keys-order = "ascending"</span>
+[<span class="t">tool.uv</span>]
+<span class="p">cache-dir</span> = <span class="s">"~/.cache/uv"</span>
+<span class="p">offline</span> = <span class="k">true</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<div class="my-4 p-4 bg-blue-100 border-l-4 border-blue-500 rounded-lg dark:bg-tombi-900 dark:border-blue-400"><div class="flex items-center gap-2 font-medium text-blue-800 dark:text-blue-200 mb-2"><span>💡</span><span>Tip</span></div><div class="text-gray-700 dark:text-gray-300"><p>If you want to automatically sort the root table of a document,
+you must write the comment directive at the very beginning of the file and <strong>insert a blank line afterwards</strong>.</p><p>If you do not add a blank line, the comment will be treated as a leading comment for the next element,
+not as a comment for the whole document.</p><div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># tombi: format.rules.table-keys-order = "ascending"</span>
+
+[<span class="t">aaa</span>]
+<span class="p">key</span> = <span class="s">"value"</span>
+
+[<span class="t">bbb</span>]
+<span class="p">key</span> = <span class="s">"value"</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div></div></div>
+<h3 id="format-rules-array-values-order" class="group relative heading-with-anchor ">format.rules.array-values-order</h3>
+<p>Controls the sorting method of array values.</p>
+<ul>
+<li><strong>Type</strong>: <code>String ^ { disabled = true }</code></li>
+<li><strong>Values</strong>:
+<ul>
+<li><code>"ascending"</code> - Sort in ascending order</li>
+<li><code>"descending"</code> - Sort in descending order</li>
+<li><code>"version-sort"</code> - Sort by version based on the <a href="https://doc.rust-lang.org/nightly/style-guide/#sorting">Rust style guide</a></li>
+<li><code>{ disabled = true }</code> - Disable sorting</li>
+</ul>
+</li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># Enable version-sort for array values</span>
+<span class="c"># tombi: format.rules.array-values-order = "version-sort"</span>
+<span class="p">dependencies</span> = [<span class="s">"1.1.0"</span>, <span class="s">"1.10.0"</span>, <span class="s">"1.2.0"</span>]</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h2 id="lint-rules" class="group relative heading-with-anchor ">Lint Rules</h2>
+<p>Value comment directives allow you to disable specific lint rules for individual values.</p>
+<div class="my-4 p-4 bg-blue-100 border-l-4 border-blue-500 rounded-lg dark:bg-tombi-900 dark:border-blue-400"><div class="flex items-center gap-2 font-medium text-blue-800 dark:text-blue-200 mb-2"><span>🗒️</span><span>Note</span></div><div class="text-gray-700 dark:text-gray-300"><p>This disable setting is a temporary workaround for incorrect JSON Schema.<br>
+Please consider contacting the JSON Schema provider (e.g., <a href="https://www.schemastore.org">Schema Store</a>) to fix the JSON Schema.</p></div></div>
+<h3 id="lint-rules-schema-resolution" class="group relative heading-with-anchor ">lint.rules.schema-resolution</h3>
+<p>Warn when a JSON Schema cannot be resolved.</p>
+<h3 id="lint-rules-schema-resolution-disabled" class="group relative heading-with-anchor ">lint.rules.schema-resolution.disabled</h3>
+<p>Disable schema-resolution warnings for a specific value.</p>
+<ul>
+<li><strong>Type</strong>: <code>boolean</code></li>
+<li><strong>Values</strong>: <code>true</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="p">dependency</span> = <span class="s">"1.0"</span> <span class="c"># tombi: lint.rules.schema-resolution.disabled = true</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="lint-rules-unused-noqa" class="group relative heading-with-anchor ">lint.rules.unused-noqa</h3>
+<p>Check if the lint is disabled but not actually used (Warning level).</p>
+<div class="my-4 p-4 bg-blue-100 border-l-4 border-blue-500 rounded-lg dark:bg-tombi-900 dark:border-blue-400"><div class="flex items-center gap-2 font-medium text-blue-800 dark:text-blue-200 mb-2"><span>🗒️</span><span>Note</span></div><div class="text-gray-700 dark:text-gray-300"><p><code>noqa</code> is the abbreviation of <code>No Quality Assurance</code>.</p></div></div>
+<h3 id="lint-rules-unused-noqa-disabled" class="group relative heading-with-anchor ">lint.rules.unused-noqa.disabled</h3>
+<p>Disable unused-noqa rule.</p>
+<ul>
+<li><strong>Type</strong>: <code>boolean</code></li>
+<li><strong>Values</strong>: <code>true</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># tombi: lint.rules.unused-noqa.disabled = true</span>
+<span class="c"># tombi: lint.rules.type-mismatch.disabled = true</span>
+<span class="p">version</span> = <span class="s">"0.1.0"</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="lint-rules-type-mismatch" class="group relative heading-with-anchor ">lint.rules.type-mismatch</h3>
+<p>Check if the value is of the correct type.</p>
+<h3 id="lint-rules-type-mismatch-disabled" class="group relative heading-with-anchor ">lint.rules.type-mismatch.disabled</h3>
+<p>Disable type-mismatch rule.</p>
+<ul>
+<li><strong>Type</strong>: <code>boolean</code></li>
+<li><strong>Values</strong>: <code>true</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># tombi: lint.rules.type-mismatch.disabled = true</span>
+<span class="p">version</span> = <span class="n">123</span>  <span class="c"># Normally expects string</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="lint-rules-const-value" class="group relative heading-with-anchor ">lint.rules.const-value</h3>
+<p>Check if the value is equal to the const value.</p>
+<h3 id="lint-rules-const-value-disabled" class="group relative heading-with-anchor ">lint.rules.const-value.disabled</h3>
+<p>Disable const-value rule.</p>
+<ul>
+<li><strong>Type</strong>: <code>boolean</code></li>
+<li><strong>Values</strong>: <code>true</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># tombi: lint.rules.const-value.disabled = true</span>
+<span class="p">type</span> = <span class="s">"wrong-value"</span>  <span class="c"># Schema expects specific const value</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="lint-rules-enum" class="group relative heading-with-anchor ">lint.rules.enum</h3>
+<p>Check if the value is one of the values in the enum.</p>
+<h3 id="lint-rules-enum-disabled" class="group relative heading-with-anchor ">lint.rules.enum.disabled</h3>
+<p>Disable enum rule.</p>
+<ul>
+<li><strong>Type</strong>: <code>boolean</code></li>
+<li><strong>Values</strong>: <code>true</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># tombi: lint.rules.enum.disabled = true</span>
+<span class="p">license</span> = <span class="s">"Unknown"</span>  <span class="c"># Not in enum list</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="lint-rules-deprecated" class="group relative heading-with-anchor ">lint.rules.deprecated</h3>
+<p>Check if the value is <a href="https://json-schema.org/understanding-json-schema/keywords#deprecated">deprecated</a> (Warning level).</p>
+<h3 id="lint-rules-deprecated-disabled" class="group relative heading-with-anchor ">lint.rules.deprecated.disabled</h3>
+<p>Disable deprecated rule.</p>
+<ul>
+<li><strong>Type</strong>: <code>boolean</code></li>
+<li><strong>Values</strong>: <code>true</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># tombi: lint.rules.deprecated.disabled = true</span>
+<span class="p">old-field</span> = <span class="s">"value"</span>  <span class="c"># Deprecated field</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="lint-rules-one-of-multiple-match" class="group relative heading-with-anchor ">lint.rules.one-of-multiple-match</h3>
+<p>Check if more than one schema in the <a href="https://json-schema.org/understanding-json-schema/reference/combining#oneOf"><code>oneOf</code></a> is valid.</p>
+<h3 id="lint-rules-one-of-multiple-match-disabled" class="group relative heading-with-anchor ">lint.rules.one-of-multiple-match.disabled</h3>
+<p>Disable one-of-multiple-match rule.</p>
+<ul>
+<li><strong>Type</strong>: <code>boolean</code></li>
+<li><strong>Values</strong>: <code>true</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># tombi: lint.rules.one-of-multiple-match.disabled = true</span>
+<span class="p">ambiguous-field</span> = <span class="s">"value"</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="lint-rules-not-schema-match" class="group relative heading-with-anchor ">lint.rules.not-schema-match</h3>
+<p>Check if the value does not match the <a href="https://json-schema.org/understanding-json-schema/reference/combining#not"><code>not</code></a> schema.</p>
+<h3 id="lint-rules-not-schema-match-disabled" class="group relative heading-with-anchor ">lint.rules.not-schema-match.disabled</h3>
+<p>Disable not-schema-match rule.</p>
+<ul>
+<li><strong>Type</strong>: <code>boolean</code></li>
+<li><strong>Values</strong>: <code>true</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># tombi: lint.rules.not-schema-match.disabled = true</span>
+<span class="p">forbidden-pattern</span> = <span class="s">"value"</span>  <span class="c"># Matches a pattern that should be rejected</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="lint-rules-key-empty" class="group relative heading-with-anchor ">lint.rules.key-empty</h3>
+<p>Check if the key is empty (Warning level).</p>
+<h3 id="lint-rules-key-empty-disabled" class="group relative heading-with-anchor ">lint.rules.key-empty.disabled</h3>
+<p>Disable key-empty rule.</p>
+<ul>
+<li><strong>Type</strong>: <code>boolean</code></li>
+<li><strong>Values</strong>: <code>true</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># tombi: lint.rules.key-empty.disabled = true</span>
+<span class="p">""</span> = <span class="s">"value"</span>  <span class="c"># Empty key is valid but discouraged</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="lint-rules-key-not-allowed" class="group relative heading-with-anchor ">lint.rules.key-not-allowed</h3>
+<p>Check if the key is not defined in this table.</p>
+<h3 id="lint-rules-key-not-allowed-disabled" class="group relative heading-with-anchor ">lint.rules.key-not-allowed.disabled</h3>
+<p>Disable key-not-allowed rule.</p>
+<ul>
+<li><strong>Type</strong>: <code>boolean</code></li>
+<li><strong>Values</strong>: <code>true</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[<span class="t">project</span>]
+<span class="c"># tombi: lint.rules.key-not-allowed.disabled = true</span>
+<span class="p">undefined-key</span> = <span class="s">"value"</span>  <span class="c"># Not defined in schema</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="lint-rules-key-pattern" class="group relative heading-with-anchor ">lint.rules.key-pattern</h3>
+<p>Check if the key matches the pattern in the schema.</p>
+<h3 id="lint-rules-key-pattern-disabled" class="group relative heading-with-anchor ">lint.rules.key-pattern.disabled</h3>
+<p>Disable key-pattern rule.</p>
+<ul>
+<li><strong>Type</strong>: <code>boolean</code></li>
+<li><strong>Values</strong>: <code>true</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[<span class="t">tool.mytools</span>]
+<span class="c"># tombi: lint.rules.key-pattern.disabled = true</span>
+<span class="p">Invalid-Key</span> = <span class="s">"value"</span>  <span class="c"># Key doesn't match pattern</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="lint-rules-dotted-keys-out-of-order" class="group relative heading-with-anchor ">lint.rules.dotted-keys-out-of-order</h3>
+<p>Check if dotted keys are defined out of order (Warning level).</p>
+<div class="my-4 p-4 bg-blue-100 border-l-4 border-blue-500 rounded-lg dark:bg-tombi-900 dark:border-blue-400"><div class="flex items-center gap-2 font-medium text-blue-800 dark:text-blue-200 mb-2"><span>🗒️</span><span>Note</span></div><div class="text-gray-700 dark:text-gray-300"><p>If <code>tombi: format.rules.table-keys-order.disabled = true</code> is set, warnings for this rule are automatically disabled.</p></div></div>
+<h3 id="lint-rules-dotted-keys-out-of-order-disabled" class="group relative heading-with-anchor ">lint.rules.dotted-keys-out-of-order.disabled</h3>
+<p>Disable dotted-keys-out-of-order rule.</p>
+<ul>
+<li><strong>Type</strong>: <code>boolean</code></li>
+<li><strong>Values</strong>: <code>true</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># tombi: lint.rules.dotted-keys-out-of-order.disabled = true</span>
+<span class="c"># VALID BUT DISCOURAGED</span>
+<span class="p">apple.type</span> = <span class="s">"fruit"</span>
+<span class="p">orange.type</span> = <span class="s">"fruit"</span>
+<span class="p">apple.skin</span> = <span class="s">"thin"</span>    <span class="c"># Out of order</span>
+<span class="p">orange.skin</span> = <span class="s">"thick"</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="lint-rules-tables-out-of-order" class="group relative heading-with-anchor ">lint.rules.tables-out-of-order</h3>
+<p>Check if tables are defined out of order (Warning level).</p>
+<div class="my-4 p-4 bg-blue-100 border-l-4 border-blue-500 rounded-lg dark:bg-tombi-900 dark:border-blue-400"><div class="flex items-center gap-2 font-medium text-blue-800 dark:text-blue-200 mb-2"><span>🗒️</span><span>Note</span></div><div class="text-gray-700 dark:text-gray-300"><p>If <code>tombi: format.rules.table-keys-order.disabled = true</code> is set, warnings for this rule are automatically disabled.</p></div></div>
+<h3 id="lint-rules-tables-out-of-order-disabled" class="group relative heading-with-anchor ">lint.rules.tables-out-of-order.disabled</h3>
+<p>Disable tables-out-of-order rule.</p>
+<ul>
+<li><strong>Type</strong>: <code>boolean</code></li>
+<li><strong>Values</strong>: <code>true</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># tombi: lint.rules.tables-out-of-order.disabled = true</span>
+<span class="c"># VALID BUT DISCOURAGED</span>
+[<span class="t">fruit.apple</span>]
+[<span class="t">animal</span>]
+[<span class="t">fruit.orange</span>]
+
+<span class="c"># RECOMMENDED</span>
+[<span class="t">fruit.apple</span>]
+[<span class="t">fruit.orange</span>]
+[<span class="t">animal</span>]</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="lint-rules-table-key-required" class="group relative heading-with-anchor ">lint.rules.table-key-required</h3>
+<p>Check if the required key exists in this table.</p>
+<h3 id="lint-rules-table-key-required-disabled" class="group relative heading-with-anchor ">lint.rules.table-key-required.disabled</h3>
+<p>Disable table-key-required rule.</p>
+<ul>
+<li><strong>Type</strong>: <code>boolean</code></li>
+<li><strong>Values</strong>: <code>true</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># tombi: lint.rules.table-key-required.disabled = true</span>
+[<span class="t">project</span>]
+<span class="c"># Missing required 'name' field</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="lint-rules-table-max-keys" class="group relative heading-with-anchor ">lint.rules.table-max-keys</h3>
+<p>Check if the table has more than the maximum number of keys.</p>
+<h3 id="lint-rules-table-max-keys-disabled" class="group relative heading-with-anchor ">lint.rules.table-max-keys.disabled</h3>
+<p>Disable table-max-keys rule.</p>
+<ul>
+<li><strong>Type</strong>: <code>boolean</code></li>
+<li><strong>Values</strong>: <code>true</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># tombi: lint.rules.table-max-keys.disabled = true</span>
+[<span class="t">config</span>]
+<span class="p">key1</span> = <span class="s">"value1"</span>
+<span class="p">key2</span> = <span class="s">"value2"</span>
+<span class="p">key3</span> = <span class="s">"value3"</span>  <span class="c"># Exceeds maxProperties in schema</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="lint-rules-table-min-keys" class="group relative heading-with-anchor ">lint.rules.table-min-keys</h3>
+<p>Check if the table has less than the minimum number of keys.</p>
+<h3 id="lint-rules-table-min-keys-disabled" class="group relative heading-with-anchor ">lint.rules.table-min-keys.disabled</h3>
+<p>Disable table-min-keys rule.</p>
+<ul>
+<li><strong>Type</strong>: <code>boolean</code></li>
+<li><strong>Values</strong>: <code>true</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># tombi: lint.rules.table-min-keys.disabled = true</span>
+[<span class="t">config</span>]
+<span class="c"># Missing required minimum keys</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="lint-rules-array-unique-values" class="group relative heading-with-anchor ">lint.rules.array-unique-values</h3>
+<p>Check if the array has duplicate values.</p>
+<h3 id="lint-rules-array-unique-values-disabled" class="group relative heading-with-anchor ">lint.rules.array-unique-values.disabled</h3>
+<p>Disable array-unique-values rule.</p>
+<ul>
+<li><strong>Type</strong>: <code>boolean</code></li>
+<li><strong>Values</strong>: <code>true</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># tombi: lint.rules.array-unique-values.disabled = true</span>
+<span class="p">tags</span> = [<span class="s">"tag1"</span>, <span class="s">"tag2"</span>, <span class="s">"tag1"</span>]  <span class="c"># Duplicate values</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="lint-rules-array-max-values" class="group relative heading-with-anchor ">lint.rules.array-max-values</h3>
+<p>Check if the array has more than the maximum number of values.</p>
+<h3 id="lint-rules-array-max-values-disabled" class="group relative heading-with-anchor ">lint.rules.array-max-values.disabled</h3>
+<p>Disable array-max-values rule.</p>
+<ul>
+<li><strong>Type</strong>: <code>boolean</code></li>
+<li><strong>Values</strong>: <code>true</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># tombi: lint.rules.array-max-values.disabled = true</span>
+<span class="p">items</span> = [<span class="n">1</span>, <span class="n">2</span>, <span class="n">3</span>, <span class="n">4</span>, <span class="n">5</span>, <span class="n">6</span>]  <span class="c"># Exceeds maxItems</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="lint-rules-array-min-values" class="group relative heading-with-anchor ">lint.rules.array-min-values</h3>
+<p>Check if the array has less than the minimum number of values.</p>
+<h3 id="lint-rules-array-min-values-disabled" class="group relative heading-with-anchor ">lint.rules.array-min-values.disabled</h3>
+<p>Disable array-min-values rule.</p>
+<ul>
+<li><strong>Type</strong>: <code>boolean</code></li>
+<li><strong>Values</strong>: <code>true</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># tombi: lint.rules.array-min-values.disabled = true</span>
+<span class="p">items</span> = []  <span class="c"># Below minItems</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="lint-rules-integer-maximum" class="group relative heading-with-anchor ">lint.rules.integer-maximum</h3>
+<p>Check if the integer is less than or equal to the maximum.</p>
+<h3 id="lint-rules-integer-maximum-disabled" class="group relative heading-with-anchor ">lint.rules.integer-maximum.disabled</h3>
+<p>Disable integer-maximum rule.</p>
+<ul>
+<li><strong>Type</strong>: <code>boolean</code></li>
+<li><strong>Values</strong>: <code>true</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># tombi: lint.rules.integer-maximum.disabled = true</span>
+<span class="p">max-connections</span> = <span class="n">10000</span>  <span class="c"># Exceeds maximum</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="lint-rules-integer-minimum" class="group relative heading-with-anchor ">lint.rules.integer-minimum</h3>
+<p>Check if the integer is greater than or equal to the minimum.</p>
+<h3 id="lint-rules-integer-minimum-disabled" class="group relative heading-with-anchor ">lint.rules.integer-minimum.disabled</h3>
+<p>Disable integer-minimum rule.</p>
+<ul>
+<li><strong>Type</strong>: <code>boolean</code></li>
+<li><strong>Values</strong>: <code>true</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># tombi: lint.rules.integer-minimum.disabled = true</span>
+<span class="p">port</span> = <span class="n">-1</span>  <span class="c"># Below minimum</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="lint-rules-integer-exclusive-maximum" class="group relative heading-with-anchor ">lint.rules.integer-exclusive-maximum</h3>
+<p>Check if the integer is less than the maximum.</p>
+<h3 id="lint-rules-integer-exclusive-maximum-disabled" class="group relative heading-with-anchor ">lint.rules.integer-exclusive-maximum.disabled</h3>
+<p>Disable integer-exclusive-maximum rule.</p>
+<ul>
+<li><strong>Type</strong>: <code>boolean</code></li>
+<li><strong>Values</strong>: <code>true</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># tombi: lint.rules.integer-exclusive-maximum.disabled = true</span>
+<span class="p">value</span> = <span class="n">100</span>  <span class="c"># Must be less than 100</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="lint-rules-integer-exclusive-minimum" class="group relative heading-with-anchor ">lint.rules.integer-exclusive-minimum</h3>
+<p>Check if the integer is greater than the minimum.</p>
+<h3 id="lint-rules-integer-exclusive-minimum-disabled" class="group relative heading-with-anchor ">lint.rules.integer-exclusive-minimum.disabled</h3>
+<p>Disable integer-exclusive-minimum rule.</p>
+<ul>
+<li><strong>Type</strong>: <code>boolean</code></li>
+<li><strong>Values</strong>: <code>true</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># tombi: lint.rules.integer-exclusive-minimum.disabled = true</span>
+<span class="p">value</span> = <span class="n">0</span>  <span class="c"># Must be greater than 0</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="lint-rules-integer-multiple-of" class="group relative heading-with-anchor ">lint.rules.integer-multiple-of</h3>
+<p>Check if the integer is a multiple of the value.</p>
+<h3 id="lint-rules-integer-multiple-of-disabled" class="group relative heading-with-anchor ">lint.rules.integer-multiple-of.disabled</h3>
+<p>Disable integer-multiple-of rule.</p>
+<ul>
+<li><strong>Type</strong>: <code>boolean</code></li>
+<li><strong>Values</strong>: <code>true</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># tombi: lint.rules.integer-multiple-of.disabled = true</span>
+<span class="p">increment</span> = <span class="n">7</span>  <span class="c"># Must be multiple of 5</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="lint-rules-float-maximum" class="group relative heading-with-anchor ">lint.rules.float-maximum</h3>
+<p>Check if the float is less than or equal to the maximum.</p>
+<h3 id="lint-rules-float-maximum-disabled" class="group relative heading-with-anchor ">lint.rules.float-maximum.disabled</h3>
+<p>Disable float-maximum rule.</p>
+<ul>
+<li><strong>Type</strong>: <code>boolean</code></li>
+<li><strong>Values</strong>: <code>true</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># tombi: lint.rules.float-maximum.disabled = true</span>
+<span class="p">ratio</span> = <span class="n">100.5</span>  <span class="c"># Exceeds maximum</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="lint-rules-float-minimum" class="group relative heading-with-anchor ">lint.rules.float-minimum</h3>
+<p>Check if the float is greater than or equal to the minimum.</p>
+<h3 id="lint-rules-float-minimum-disabled" class="group relative heading-with-anchor ">lint.rules.float-minimum.disabled</h3>
+<p>Disable float-minimum rule.</p>
+<ul>
+<li><strong>Type</strong>: <code>boolean</code></li>
+<li><strong>Values</strong>: <code>true</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># tombi: lint.rules.float-minimum.disabled = true</span>
+<span class="p">threshold</span> = <span class="n">-0.5</span>  <span class="c"># Below minimum</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="lint-rules-float-exclusive-maximum" class="group relative heading-with-anchor ">lint.rules.float-exclusive-maximum</h3>
+<p>Check if the float is less than the maximum.</p>
+<h3 id="lint-rules-float-exclusive-maximum-disabled" class="group relative heading-with-anchor ">lint.rules.float-exclusive-maximum.disabled</h3>
+<p>Disable float-exclusive-maximum rule.</p>
+<ul>
+<li><strong>Type</strong>: <code>boolean</code></li>
+<li><strong>Values</strong>: <code>true</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># tombi: lint.rules.float-exclusive-maximum.disabled = true</span>
+<span class="p">percentage</span> = <span class="n">100.0</span>  <span class="c"># Must be less than 100.0</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="lint-rules-float-exclusive-minimum" class="group relative heading-with-anchor ">lint.rules.float-exclusive-minimum</h3>
+<p>Check if the float is greater than the minimum.</p>
+<h3 id="lint-rules-float-exclusive-minimum-disabled" class="group relative heading-with-anchor ">lint.rules.float-exclusive-minimum.disabled</h3>
+<p>Disable float-exclusive-minimum rule.</p>
+<ul>
+<li><strong>Type</strong>: <code>boolean</code></li>
+<li><strong>Values</strong>: <code>true</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># tombi: lint.rules.float-exclusive-minimum.disabled = true</span>
+<span class="p">probability</span> = <span class="n">0.0</span>  <span class="c"># Must be greater than 0.0</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="lint-rules-float-multiple-of" class="group relative heading-with-anchor ">lint.rules.float-multiple-of</h3>
+<p>Check if the float is a multiple of the value.</p>
+<h3 id="lint-rules-float-multiple-of-disabled" class="group relative heading-with-anchor ">lint.rules.float-multiple-of.disabled</h3>
+<p>Disable float-multiple-of rule.</p>
+<ul>
+<li><strong>Type</strong>: <code>boolean</code></li>
+<li><strong>Values</strong>: <code>true</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># tombi: lint.rules.float-multiple-of.disabled = true</span>
+<span class="p">step</span> = <span class="n">0.3</span>  <span class="c"># Must be multiple of 0.1</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="lint-rules-string-max-length" class="group relative heading-with-anchor ">lint.rules.string-max-length</h3>
+<p>Check if the string is longer than the max length.</p>
+<h3 id="lint-rules-string-max-length-disabled" class="group relative heading-with-anchor ">lint.rules.string-max-length.disabled</h3>
+<p>Disable string-max-length rule.</p>
+<ul>
+<li><strong>Type</strong>: <code>boolean</code></li>
+<li><strong>Values</strong>: <code>true</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># tombi: lint.rules.string-max-length.disabled = true</span>
+<span class="p">description</span> = <span class="s">"Very long description that exceeds maxLength..."</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="lint-rules-string-min-length" class="group relative heading-with-anchor ">lint.rules.string-min-length</h3>
+<p>Check if the string is shorter than the min length.</p>
+<h3 id="lint-rules-string-min-length-disabled" class="group relative heading-with-anchor ">lint.rules.string-min-length.disabled</h3>
+<p>Disable string-min-length rule.</p>
+<ul>
+<li><strong>Type</strong>: <code>boolean</code></li>
+<li><strong>Values</strong>: <code>true</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># tombi: lint.rules.string-min-length.disabled = true</span>
+<span class="p">name</span> = <span class="s">"x"</span>  <span class="c"># Too short</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="lint-rules-string-format" class="group relative heading-with-anchor ">lint.rules.string-format</h3>
+<p>Check if the string matches the format.</p>
+<h3 id="lint-rules-string-format-disabled" class="group relative heading-with-anchor ">lint.rules.string-format.disabled</h3>
+<p>Disable string-format rule.</p>
+<ul>
+<li><strong>Type</strong>: <code>boolean</code></li>
+<li><strong>Values</strong>: <code>true</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># tombi: lint.rules.string-format.disabled = true</span>
+<span class="p">email</span> = <span class="s">"invalid-email"</span>  <span class="c"># Doesn't match email format</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h3 id="lint-rules-string-pattern" class="group relative heading-with-anchor ">lint.rules.string-pattern</h3>
+<p>Check if the string matches the pattern.</p>
+<h3 id="lint-rules-string-pattern-disabled" class="group relative heading-with-anchor ">lint.rules.string-pattern.disabled</h3>
+<p>Disable string-pattern rule.</p>
+<ul>
+<li><strong>Type</strong>: <code>boolean</code></li>
+<li><strong>Values</strong>: <code>true</code></li>
+</ul>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># tombi: lint.rules.string-pattern.disabled = true</span>
+<span class="p">version</span> = <span class="s">"invalid"</span>  <span class="c"># Doesn't match version pattern</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div><div class="mt-8 pt-8 border-t border-gray-200 flex justify-between"><a href="/tombi/v1.11.3/docs/comment-directive/tombi-document-directive" class="no-underline text-blue-500 hover:text-blue-600 inactive"><svg color="currentColor" fill="currentColor" stroke-width="0" style="overflow:visible" viewBox="0 0 24 24" size="12" height="12" width="12" xmlns="http://www.w3.org/2000/svg"><use href="/tombi/v1.11.3/icons.svg#icon-8"></use></svg> Tombi Document Directive</a><a href="/tombi/v1.11.3/docs/extensions" class="no-underline text-blue-500 hover:text-blue-600 ml-auto inactive">Extensions <svg color="currentColor" fill="currentColor" stroke-width="0" style="overflow:visible" viewBox="0 0 24 24" size="12" height="12" width="12" xmlns="http://www.w3.org/2000/svg"><use href="/tombi/v1.11.3/icons.svg#icon-9"></use></svg></a></div></div></main></div></div></main></div></body></html>

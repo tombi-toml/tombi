@@ -1,0 +1,292 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title data-sm="00000001000000004000000200000000">JSON Schema</title><meta data-sm="00000001000000004000000200000010" name="description" content="Schema validation and completion with SchemaStore."><meta data-sm="00000001000000004000000200000020" property="og:type" content="website"><meta data-sm="00000001000000004000000200000030" property="og:url" content="https://tombi-toml.github.io/tombi/v1.11.3/docs/json-schema"><meta data-sm="00000001000000004000000200000040" property="og:title" content="JSON Schema"><meta data-sm="00000001000000004000000200000050" property="og:description" content="Schema validation and completion with SchemaStore."><meta data-sm="00000001000000004000000200000060" property="og:image" content="https://raw.githubusercontent.com/tombi-toml/tombi/v1.11.3/docs/public/ogp.png"><meta data-sm="00000001000000004000000200000070" property="og:site_name" content="Tombi"><meta data-sm="00000001000000004000000200000080" property="twitter:card" content="summary_large_image"><meta data-sm="00000001000000004000000200000090" property="twitter:url" content="https://tombi-toml.github.io/tombi/v1.11.3/docs/json-schema"><meta data-sm="000000010000000040000002000000a100" property="twitter:title" content="JSON Schema"><meta data-sm="000000010000000040000002000000a110" property="twitter:description" content="Schema validation and completion with SchemaStore."><meta data-sm="000000010000000040000002000000a120" property="twitter:image" content="https://raw.githubusercontent.com/tombi-toml/tombi/v1.11.3/docs/public/ogp.png"><meta name="tombi-archive-base" content="/tombi/v1.11.3"><link rel="icon" href="https://raw.githubusercontent.com/tombi-toml/tombi/v1.11.3/docs/public/favicon.ico"><link rel="stylesheet" href="/tombi/v1.11.3/archive.css"><link rel="stylesheet" href="/tombi/common/v1/archive/archive-ui.css"><link rel="stylesheet" href="/tombi/common/v1/version-picker.css"><script src="/tombi/common/v1/archive/theme.js"></script><script type="module" src="/tombi/common/v1/archive/archive.js"></script><script defer src="/tombi/common/v1/version-picker.js"></script></head><body><div class="min-h-screen bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100"><div id="archive-header"></div><main class="flex-1 mt-20 pt-0"><div class="max-w-7xl mx-auto"><div class="flex w-full max-w-[100vw]"><nav id="archive-sidebar" class="w-[250px] shrink-0 h-screen sticky top-0 overflow-y-auto p-4 bg-[--color-bg-secondary] border-r border-[--color-border] md:block hidden" aria-label="Documentation"></nav><main tabindex="-1" class="flex-1 min-w-0 p-4 mdx-content min-h-screen max-w-full outline-none"><div class="max-w-full">
+
+<h1 id="json-schema" class="group relative heading-with-anchor ">JSON Schema</h1>
+<p>While TOML itself may introduce <a href="https://github.com/toml-lang/toml/issues/792">schema specifications</a> in the future,
+Tombi, like Taplo, is implementing validation features in its linter that support <a href="https://json-schema.org/">JSON Schema</a>.</p>
+<p>Currently, we are extending JSON Schema with special annotations using the <code>x-tombi-*</code> prefix.</p>
+<h2 id="schema-priority" class="group relative heading-with-anchor ">Schema Priority</h2>
+<p>This section explains how Tombi prioritizes the application of <code>x-tombi-*</code> keys in your JSON Schema:</p>
+<ol>
+<li><code>#:schema</code> directive in the TOML file's top comment (compatible with <a href="https://taplo.tamasfe.dev/configuration/directives.html#the-schema-directive">Taplo</a>)</li>
+<li>JSON Schema specified in <a href="/tombi/v1.11.3/docs/configuration#search-priority">the Tombi configuration file</a></li>
+<li>JSON Schema from the <a href="https://www.schemastore.org">JSON Schema Store</a></li>
+</ol>
+<h2 id="private-git-hub-schemas" class="group relative heading-with-anchor ">Private GitHub schemas</h2>
+<p>The native CLI and editor language server can fetch schemas from private GitHub repositories using raw URLs. For example, add this directive to <code>nagi.toml</code>:</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c">#:schema https://raw.githubusercontent.com/nagi-sql/nagi-config/refs/heads/main/jsonschema/generated/nagi.json</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<p>Or add a schema entry to <code>tombi.toml</code>:</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[[<span class="t">schemas</span>]]
+<span class="p">path</span> = <span class="s">"https://raw.githubusercontent.com/nagi-sql/nagi-config/refs/heads/main/jsonschema/generated/nagi.json"</span>
+<span class="p">include</span> = [<span class="s">"nagi.toml"</span>]</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<p>Use a raw URL, rather than a GitHub <code>blob</code> page URL. Tombi first fetches the schema without authentication. If GitHub returns HTTP 401, 403, or 404, Tombi retries with credentials in this order:</p>
+<ol>
+<li><code>GH_TOKEN</code></li>
+<li><code>GITHUB_TOKEN</code></li>
+<li><code>gh auth token --hostname github.com</code></li>
+</ol>
+<p>The account or token must have read access to the repository. If an environment token is set but invalid, Tombi reports the fetch failure without switching to another credential source. If neither token is set and <code>gh</code> is unavailable or not signed in, fetching fails without opening a login prompt.</p>
+<p>Credentials must be available to the Tombi process. For an editor running in a container, remote host, or WSL, configure the environment or <code>gh</code> authentication there. This feature is not available in the browser/WASM build.</p>
+<div class="my-4 p-4 bg-blue-100 border-l-4 border-blue-500 rounded-lg dark:bg-tombi-900 dark:border-blue-400"><div class="flex items-center gap-2 font-medium text-blue-800 dark:text-blue-200 mb-2"><span>🗒️</span><span>Note</span></div><div class="text-gray-700 dark:text-gray-300"><p>Tokens are used only for the authenticated request and are not cached. The downloaded schema JSON is cached locally, including schemas from private repositories. The default cache lifetime is 24 hours; offline mode can continue using the local copy. See <a href="/tombi/v1.11.3/docs/environment-variables">environment variables</a> for cache controls.</p></div></div>
+<h2 id="built-in-schemas" class="group relative heading-with-anchor ">Built-in schemas</h2>
+<p>Tombi embeds a subset of JSON Schema Store schemas into the binary. To use an embedded schema, replace the <code>https://</code> scheme with <code>tombi://</code>.</p>
+<p>For example, use <code>tombi://www.schemastore.org/cargo.json</code> instead of <code>https://www.schemastore.org/cargo.json</code>.</p>
+<p>The authoritative list of embedded schemas is available from the embedded catalog:</p>
+<ul>
+<li><code>tombi://www.schemastore.org/api/json/catalog.json</code></li>
+</ul>
+<p>Some common embedded schema URIs include:</p>
+<ul>
+<li><code>tombi://www.schemastore.org/cargo.json</code></li>
+<li><code>tombi://www.schemastore.org/pyproject.json</code></li>
+<li><code>tombi://www.schemastore.org/tombi.json</code></li>
+</ul>
+<div class="my-4 p-4 bg-blue-100 border-l-4 border-blue-500 rounded-lg dark:bg-tombi-900 dark:border-blue-400"><div class="flex items-center gap-2 font-medium text-blue-800 dark:text-blue-200 mb-2"><span>🗒️</span><span>Note</span></div><div class="text-gray-700 dark:text-gray-300"><p>Built-in schemas are useful when you want schema validation and completion to work offline, or when you want to avoid fetching schemas over the network.
+The embedded catalog above is the source of truth for which schemas are built into the current binary.</p></div></div>
+<h2 id="tombi-metadata" class="group relative heading-with-anchor ">Tombi metadata</h2>
+<p>Tombi supports the following metadata keys in your JSON Schema.</p>
+<h3 id="x-tombi-toml-version" class="group relative heading-with-anchor ">x-tombi-toml-version</h3>
+<p>This key automatically determines the TOML version to use.
+Currently, we support:</p>
+<ul>
+<li><code>v1.0.0</code> (stable)</li>
+<li><code>v1.1.0</code> (latest)</li>
+</ul>
+<p>The preview version includes exciting features like trailing comma support in Inline Tables.</p>
+<div class="my-4 p-4 bg-blue-100 border-l-4 border-blue-500 rounded-lg dark:bg-tombi-900 dark:border-blue-400"><div class="flex items-center gap-2 font-medium text-blue-800 dark:text-blue-200 mb-2"><span>🗒️</span><span>Note</span></div><div class="text-gray-700 dark:text-gray-300"><p><code>v1.1.0</code> has only just been released and is not yet supported by many tools.
+Therefore, <code>v1.0.0</code> will be used as the default TOML version for the time being.</p><p>To override <code>x-tombi-toml-version</code> with an older version, set <code>toml-version</code> in each relevant <code>[[schemas]]</code> entry in your <code>tombi.toml</code>.</p><div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1">[[<span class="t">schemas</span>]]
+<span class="p">toml-version</span> = <span class="s">"v1.0.0"</span>
+<span class="p">path</span> = <span class="s">"tombi://www.schemastore.org/cargo.json"</span>
+<span class="p">include</span> = [<span class="s">"Cargo.toml"</span>]</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div></div></div>
+<h3 id="x-tombi-additional-key-label" class="group relative heading-with-anchor ">x-tombi-additional-key-label</h3>
+<p>This key specifies the label to use for additional keys.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-json overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-json" tabindex="-1">{
+  <span class="p">"type"</span>: <span class="s">"object"</span>,
+  <span class="p">"properties"</span>: {
+    <span class="p">"dependencies"</span>: {
+      <span class="p">"type"</span>: <span class="s">"object"</span>,
+      <span class="p">"additionalProperties"</span>: {
+        <span class="p">"$ref"</span>: <span class="s">"#/definitions/Dependency"</span>
+      },
+      <span class="p">"x-tombi-additional-key-label"</span>: <span class="s">"crate_name"</span>,
+      ...
+    },
+    ...
+  },
+  ...
+}</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<p>This allows the label displayed in the completion candidates for additionalProperties keys to be <code>$crate_name</code>.<br>
+If you don't specify this key, the label will be <code>$key</code>.</p>
+<img src="https://raw.githubusercontent.com/tombi-toml/tombi/v1.11.3/docs/public/x-tombi-additional-key-label.png" class="w-full">
+<h2 id="formatting" class="group relative heading-with-anchor ">Formatting</h2>
+<h3 id="x-tombi-table-keys-order" class="group relative heading-with-anchor ">x-tombi-table-keys-order</h3>
+<p>This key controls the automatic sorting of table keys (e.g., <code>[dependencies]</code>).</p>
+<p>Available sorting strategies:</p>
+<ul>
+<li><code>ascending</code></li>
+<li><code>descending</code></li>
+<li><code>version-sort</code></li>
+<li><code>schema</code></li>
+</ul>
+<div class="my-4 p-4 bg-blue-100 border-l-4 border-blue-500 rounded-lg dark:bg-tombi-900 dark:border-blue-400"><div class="flex items-center gap-2 font-medium text-blue-800 dark:text-blue-200 mb-2"><span>🗒️</span><span>Note</span></div><div class="text-gray-700 dark:text-gray-300"><p>The <code>version-sort</code> strategy is based on the <a href="https://doc.rust-lang.org/nightly/style-guide/#sorting">Rust style guide</a>.</p></div></div>
+<p>By specifying object instead of string, you can individually define sorting methods for the different groups: <code>properties</code>, <code>additionalProperties</code>, and <code>patternProperties</code>.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-json overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-json" tabindex="-1">{
+  <span class="p">"x-tombi-table-keys-order"</span>: {
+    <span class="p">"properties"</span>: <span class="s">"schema"</span>,
+    <span class="p">"patternProperties"</span>: <span class="s">"version-sort"</span>,
+    <span class="p">"additionalProperties"</span>: <span class="s">"descending"</span>
+  }
+}</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<p>The order of the object's properties is significant. Sorting is performed sequentially for each group starting from the first property, and the results are then combined.</p>
+<div class="my-4 p-4 bg-blue-100 border-l-4 border-blue-500 rounded-lg dark:bg-tombi-900 dark:border-blue-400"><div class="flex items-center gap-2 font-medium text-blue-800 dark:text-blue-200 mb-2"><span>🗒️</span><span>Note</span></div><div class="text-gray-700 dark:text-gray-300"><p>The <code>schema</code> strategy can only be used for <code>properties</code>.</p></div></div>
+<h3 id="x-tombi-array-values-order" class="group relative heading-with-anchor ">x-tombi-array-values-order</h3>
+<p>This key controls the automatic sorting of array values.</p>
+<p>Available sorting strategies:</p>
+<ul>
+<li><code>ascending</code></li>
+<li><code>descending</code></li>
+<li><code>version-sort</code></li>
+</ul>
+<div class="my-4 p-4 bg-blue-100 border-l-4 border-blue-500 rounded-lg dark:bg-tombi-900 dark:border-blue-400"><div class="flex items-center gap-2 font-medium text-blue-800 dark:text-blue-200 mb-2"><span>🗒️</span><span>Note</span></div><div class="text-gray-700 dark:text-gray-300"><p>The <code>version-sort</code> strategy is based on the <a href="https://doc.rust-lang.org/nightly/style-guide/#sorting">Rust style guide</a>.</p></div></div>
+<div class="my-4 p-4 bg-blue-100 border-l-4 border-blue-500 rounded-lg dark:bg-tombi-900 dark:border-blue-400"><div class="flex items-center gap-2 font-medium text-blue-800 dark:text-blue-200 mb-2"><span>⚠️</span><span>Warning</span></div><div class="text-gray-700 dark:text-gray-300"><p><code>Float</code> and <code>Array</code> cannot be sorted. To sort <code>Table</code>, you need to use <code>x-tombi-array-values-order-by</code>.</p></div></div>
+<p>By specifying object instead of string, you can individually define sorting methods for the different groups: <code>oneOf</code>, <code>anyOf</code>.</p>
+<p>The following example, sorts the first schema of oneOf with <code>version-sort</code>, and the second schema with <code>ascending</code> after that.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-json overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-json" tabindex="-1">{
+  <span class="p">"type"</span>: <span class="s">"array"</span>,
+  <span class="p">"items"</span>: {
+    <span class="p">"oneOf"</span>: [
+      { <span class="p">"type"</span>: <span class="s">"string"</span> },
+      { <span class="p">"type"</span>: <span class="s">"number"</span> }
+    ]
+  },
+  <span class="p">"x-tombi-array-values-order"</span>: {
+    <span class="p">"oneOf"</span>: [
+      <span class="s">"version-sort"</span>,
+      <span class="s">"ascending"</span>
+    ]
+  }
+}</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<p>The following is the sorting result.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># Before</span>
+<span class="p">key</span> = [<span class="n">1</span>, <span class="s">"2"</span>, <span class="n">3</span>, <span class="s">"4"</span>]
+
+<span class="c"># After</span>
+<span class="p">key</span> = [<span class="s">"2"</span>, <span class="s">"4"</span>, <span class="n">1</span>, <span class="n">3</span>]</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<div class="my-4 p-4 bg-blue-100 border-l-4 border-blue-500 rounded-lg dark:bg-tombi-900 dark:border-blue-400"><div class="flex items-center gap-2 font-medium text-blue-800 dark:text-blue-200 mb-2"><span>⚠️</span><span>Warning</span></div><div class="text-gray-700 dark:text-gray-300"><p><code>oneOf</code> and <code>anyOf</code> cannot sort nested schemas. <code>oneOf</code> and <code>anyOf</code> must be flattened.</p><div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-json overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-json" tabindex="-1">{
+  <span class="p">"oneOf"</span>: [
+    {
+      <span class="c">// Cannot use nested `oneOf` / `anyOf`</span>
+      <span class="p">"oneOf"</span>: [
+        { <span class="p">"type"</span>: <span class="s">"string"</span> },
+        { <span class="p">"type"</span>: <span class="s">"number"</span> }
+      ]
+    },
+    ...
+  ],
+  <span class="p">"x-tombi-array-values-order"</span>: {
+    <span class="p">"oneOf"</span>: [...]
+  }
+}</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div></div></div>
+<h3 id="x-tombi-array-values-order-by" class="group relative heading-with-anchor ">x-tombi-array-values-order-by</h3>
+<p>This key specifies which key to use as the sorting key when the array element is a table.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-json overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-json" tabindex="-1">{
+  <span class="p">"type"</span>: <span class="s">"array"</span>,
+  <span class="p">"items"</span>: {
+    <span class="p">"type"</span>: <span class="s">"object"</span>,
+    <span class="p">"properties"</span>: {
+      <span class="p">"name"</span>: {
+        <span class="p">"type"</span>: <span class="s">"string"</span>
+      },
+      <span class="p">"age"</span>: {
+        <span class="p">"type"</span>: <span class="s">"number"</span>
+      }
+    },
+    <span class="p">"x-tombi-array-values-order-by"</span>: <span class="s">"name"</span>
+  },
+  <span class="p">"x-tombi-array-values-order"</span>: <span class="s">"ascending"</span>
+}</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<p>The following is the sorting result.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-toml overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-toml" tabindex="-1"><span class="c"># Before</span>
+<span class="p">key</span> = [
+  { <span class="p">name</span> = <span class="s">"Bob"</span>, <span class="p">age</span> = <span class="n">30</span> },
+  { <span class="p">name</span> = <span class="s">"Charlie"</span>, <span class="p">age</span> = <span class="n">25</span> },
+  { <span class="p">name</span> = <span class="s">"Alice"</span>, <span class="p">age</span> = <span class="n">20</span> },
+]
+
+<span class="c"># After</span>
+<span class="p">key</span> = [
+  { <span class="p">name</span> = <span class="s">"Alice"</span>, <span class="p">age</span> = <span class="n">20</span> },
+  { <span class="p">name</span> = <span class="s">"Bob"</span>, <span class="p">age</span> = <span class="n">30</span> },
+  { <span class="p">name</span> = <span class="s">"Charlie"</span>, <span class="p">age</span> = <span class="n">25</span> },
+]</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h2 id="linting" class="group relative heading-with-anchor ">Linting</h2>
+<h3 id="validation-score" class="group relative heading-with-anchor ">Validation Score</h3>
+<p>For complex JSON Schemas, validation failures can produce many error messages.
+To help users identify the most relevant errors,
+Tombi uses a scoring system to filter out less important validation failures.</p>
+<p>The currently implemented points are as follows:</p>
+<ul>
+<li>Type matching: 1 point is added for the value that matches the type defined in the JSON Schema.</li>
+<li>Required key matching: 1 point is added for each required key present in the table schema.</li>
+</ul>
+<p>More details are <a href="https://github.com/tombi-toml/tombi/issues/1021#issuecomment-3338983593">here</a>.</p>
+<h3 id="strict-mode" class="group relative heading-with-anchor ">Strict Mode</h3>
+<p>By default, Tombi operates in <code>strict</code> mode. In this mode, objects without <code>additionalProperties</code> are treated as if <code>additionalProperties: false</code> was specified.
+This differs from the standard JSON Schema specification but provides more precise validation by eliminating ambiguity.</p>
+<p>To disable strict mode globally, add <code>schema.strict = false</code> to your <code>tombi.toml</code> configuration.
+You can also set <code>strict</code> on a matching <code>[[schemas]]</code> root or sub-schema entry.</p>
+<p>Tombi resolves strict mode in this order:</p>
+<ol>
+<li>The document comment directive: <code>#:tombi schema.strict = true</code> or <code>false</code></li>
+<li>The matching sub-schema <code>strict</code> setting</li>
+<li>The matching root-schema <code>strict</code> setting</li>
+<li>The global <code>schema.strict</code> setting</li>
+<li>The built-in default, <code>true</code></li>
+</ol>
+<p>An omitted level falls through to the next one. A sub-schema setting applies only at and below its configured <code>root</code>.</p>
+<h3 id="x-tombi-string-formats" class="group relative heading-with-anchor ">x-tombi-string-formats</h3>
+<p>In Tombi default behavior, the <code>format</code> used in JSON Schema's <code>“type”: “string"</code> only recognizes conversions to the following built-in types:</p>
+<ul>
+<li><code>date-time</code></li>
+<li><code>date-time-local</code></li>
+<li><code>date</code></li>
+<li><code>time-local</code></li>
+</ul>
+<p>By adding the <code>x-tombi-string-formats</code> key to the root of the JSON Schema, you can add the <code>format</code> of the string to the validation target.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-json overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-json" tabindex="-1">{
+  <span class="p">"$schema"</span>: <span class="s">"http://json-schema.org/draft-07/schema#"</span>,
+  <span class="p">"x-tombi-string-formats"</span>: [
+    <span class="s">"email"</span>,
+    <span class="s">"hostname"</span>,
+    <span class="s">"uri"</span>,
+    <span class="s">"uuid"</span>,
+    <span class="s">"ipv4"</span>,
+    <span class="s">"ipv6"</span>
+  ]
+}</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<p>Currently supported <code>format</code> targets are as follows:</p>
+<div class="mdx-table-shell" data-sticky-active="false"><div class="mdx-table-sticky-head" aria-hidden="true"></div><div class="mdx-table-scroll"><table><thead><tr><th>format</th><th>Specification</th><th>TOML Type</th></tr></thead><tbody><tr><td><code>email</code></td><td><a href="https://datatracker.ietf.org/doc/html/rfc5322">RFC 5322</a></td><td></td></tr><tr><td><code>hostname</code></td><td><a href="https://datatracker.ietf.org/doc/html/rfc1034">RFC 1034</a></td><td></td></tr><tr><td><code>uri</code></td><td><a href="https://datatracker.ietf.org/doc/html/rfc3986">RFC 3986</a></td><td></td></tr><tr><td><code>uri-reference</code></td><td><a href="https://datatracker.ietf.org/doc/html/rfc3986">RFC 3986</a></td><td></td></tr><tr><td><code>uuid</code></td><td><a href="https://datatracker.ietf.org/doc/html/rfc4122">RFC 4122</a></td><td></td></tr><tr><td><code>ipv4</code></td><td><a href="https://datatracker.ietf.org/doc/html/rfc2673#section-3.2">RFC 2673 §3.2</a></td><td></td></tr><tr><td><code>ipv6</code></td><td><a href="https://datatracker.ietf.org/doc/html/rfc4291#section-2.2">RFC 4291 §2.2</a></td><td></td></tr><tr><td><code>date-time</code></td><td><a href="https://datatracker.ietf.org/doc/html/rfc3339#section-5.6">RFC 3339 §5.6</a></td><td>Offset Date-Time</td></tr><tr><td><code>date-time-local</code></td><td><a href="https://spec.openapis.org/registry/format/date-time-local.html">OpenAPI Format Registry</a></td><td>Local Date-Time</td></tr><tr><td><code>date</code></td><td><a href="https://datatracker.ietf.org/doc/html/rfc3339#section-5.6">RFC 3339 §5.6</a> full-date</td><td>Local Date</td></tr><tr><td><code>time</code></td><td><a href="https://datatracker.ietf.org/doc/html/rfc3339#section-5.6">RFC 3339 §5.6</a> full-time</td><td></td></tr><tr><td><code>time-local</code></td><td><a href="https://spec.openapis.org/registry/format/time-local.html">OpenAPI Format Registry</a></td><td>Local Time</td></tr><tr><td><code>regex</code></td><td><a href="https://262.ecma-international.org/">ECMA-262</a></td><td></td></tr><tr><td><code>json-pointer</code></td><td><a href="https://datatracker.ietf.org/doc/html/rfc6901">RFC 6901</a></td><td></td></tr></tbody></table></div></div>
+<div class="my-4 p-4 bg-blue-100 border-l-4 border-blue-500 rounded-lg dark:bg-tombi-900 dark:border-blue-400"><div class="flex items-center gap-2 font-medium text-blue-800 dark:text-blue-200 mb-2"><span>🗒️</span><span>Note</span></div><div class="text-gray-700 dark:text-gray-300"><p>If you want to support additional <code>format</code> in Tombi, please check if it exists in <a href="https://json-schema.org/draft/2020-12/json-schema-validation#name-defined-formats">JSON Schema Specification</a> or <a href="https://spec.openapis.org/registry/format/">OpenAPI Format Registry</a>.</p></div></div>
+<h2 id="language-gap" class="group relative heading-with-anchor ">Language Gap</h2>
+<p>While TOML and JSON are different languages, JSON Schema remains a valuable tool for representing TOML structures, especially given the abundance of existing schema assets.</p>
+<p>Tombi bridges this language gap by using abbreviations to represent JSON Schema concepts that don't have direct equivalents in TOML.</p>
+<p>For more details on how Tombi represents these concepts, check out the Hover section.</p>
+<h2 id="json-catalog-schema-cache" class="group relative heading-with-anchor ">JSON Catalog/Schema Cache</h2>
+<p>Tombi caches JSON Catalog/Schemas in the file system to avoid unnecessary network requests.</p>
+<h3 id="cache-expiration" class="group relative heading-with-anchor ">Cache Expiration</h3>
+<p>Cached schemas expire after <strong>24 hours</strong> by default. When a cached schema expires, Tombi automatically fetches the latest version from the remote source.</p>
+<p>Use <code>--cache-ttl &lt;SECONDS&gt;</code> to set the cache expiration time for <code>tombi format</code>, <code>tombi lint</code>, or <code>tombi lsp</code>:</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-sh overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-sh" tabindex="-1">tombi <span class="f">format</span> --cache-ttl <span class="n">3600</span></code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<p>The value must be a non-negative integer in seconds. The CLI option overrides the <code>TOMBI_CACHE_TTL</code> environment variable. When neither is set, the default is <code>86400</code> seconds (24 hours). See <a href="/tombi/v1.11.3/docs/environment-variables#tombi-cache-ttl">Environment Variables</a> for details.</p>
+<h3 id="how-to-clear-cache" class="group relative heading-with-anchor ">How to Clear Cache</h3>
+<h4 id="cli" class="group relative heading-with-anchor ">CLI</h4>
+<p>Run <code>tombi cache clean</code> to remove all cached catalogs and schemas. The cache directory remains in place. Use <code>tombi cache dir</code> to print its absolute path, including when the directory does not exist yet.</p>
+<p>When <code>TOMBI_CACHE_HOME</code> is set, cleaning removes every entry in that directory. Use <code>tombi cache dir</code> to check the selected path. Avoid a shared directory that another process can rename or replace while cleaning runs.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-bash overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-bash" tabindex="-1">tombi cache <span class="f">dir</span>
+tombi cache clean</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<p>Use <code>--no-cache</code> option to disable using caches for a CLI command.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-bash overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-bash" tabindex="-1">tombi <span class="f">format</span> --no-cache</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<div class="my-4 p-4 bg-blue-100 border-l-4 border-blue-500 rounded-lg dark:bg-tombi-900 dark:border-blue-400"><div class="flex items-center gap-2 font-medium text-blue-800 dark:text-blue-200 mb-2"><span>⚠️</span><span>Warning</span></div><div class="text-gray-700 dark:text-gray-300"><p><code>--no-cache</code> option does not use caches, but <strong>saves the latest catalogs/schemas</strong> to the file caches.<br>
+(This behavior is the same as HTTP's <code>Cache-Control: no-cache</code>)</p><p>It only applies to catalogs/schemas used by the command, and does not update other files.</p></div></div>
+<h4 id="language-server" class="group relative heading-with-anchor ">Language Server</h4>
+<p>Use <code>RefreshCache</code> command to clear the cache.</p>
+<div class="my-4 p-4 bg-blue-100 border-l-4 border-blue-500 rounded-lg dark:bg-tombi-900 dark:border-blue-400"><div class="flex items-center gap-2 font-medium text-blue-800 dark:text-blue-200 mb-2"><span>⚠️</span><span>Warning</span></div><div class="text-gray-700 dark:text-gray-300"><p>It removes <strong>all file caches</strong> and fetches the latest schema over the network for the editing TOML file.</p></div></div>
+<h3 id="cache-location-search-priority" class="group relative heading-with-anchor ">Cache Location Search Priority</h3>
+<ol>
+<li><code>$TOMBI_CACHE_HOME</code></li>
+<li><code>$XDG_CACHE_HOME/tombi</code></li>
+<li><code>~/.cache/tombi</code></li>
+</ol>
+<h2 id="associate-schema" class="group relative heading-with-anchor ">Associate Schema</h2>
+<p>VSCode supports associating a TOML schema with a file match pattern.
+See <a href="/tombi/v1.11.3/docs/editors/vscode-extension#json-schema-association">VSCode Extension</a> for details.</p>
+<h2 id="non-standard-supported-features" class="group relative heading-with-anchor ">Non-standard Supported Features</h2>
+<p>Tombi supports the following features for compatibility with existing schema tooling, even though
+they are not part of the JSON Schema specification.</p>
+<h3 id="deprecation-message" class="group relative heading-with-anchor ">deprecationMessage</h3>
+<p><code>deprecationMessage</code> is a non-standard keyword originating from the VS Code JSON language service.
+Tombi accepts it for compatibility, but only honors it alongside <code>deprecated: true</code>.</p>
+<p>When both are present, the <code>deprecationMessage</code> string is used as the deprecation diagnostic message
+instead of the generic one. A <code>deprecationMessage</code> without <code>deprecated: true</code> is ignored.</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-json overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-json" tabindex="-1">{
+  <span class="p">"properties"</span>: {
+    <span class="p">"old-key"</span>: {
+      <span class="p">"type"</span>: <span class="s">"string"</span>,
+      <span class="p">"deprecated"</span>: <span class="k">true</span>,
+      <span class="p">"deprecationMessage"</span>: <span class="s">"Use `new-key` instead."</span>
+    }
+  }
+}</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h2 id="compliance-status" class="group relative heading-with-anchor ">Compliance Status</h2>
+<p>The table below summarizes keyword membership in each JSON Schema dialect and whether Tombi
+implements the keyword when that dialect defines it.</p>
+<p><code>✅</code>: supported in the dialect<br>
+<code>❌</code>: not implemented in Tombi<br>
+<code>-</code>: not used by that dialect</p>
+<div class="mdx-table-shell" data-sticky-active="false"><div class="mdx-table-sticky-head" aria-hidden="true"></div><div class="mdx-table-scroll"><table><thead><tr><th>Keyword</th><th>draft-07</th><th>draft-2019-09</th><th>draft-2020-12</th></tr></thead><tbody><tr><td><code>$id</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>$schema</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>$ref</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>$defs</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>definitions</code></td><td>✅</td><td>-</td><td>-</td></tr><tr><td><code>$anchor</code></td><td>-</td><td>✅</td><td>✅</td></tr><tr><td><code>$dynamicRef</code></td><td>-</td><td>-</td><td>✅</td></tr><tr><td><code>$dynamicAnchor</code></td><td>-</td><td>-</td><td>✅</td></tr><tr><td><code>$recursiveRef</code></td><td>-</td><td>✅</td><td>-</td></tr><tr><td><code>$recursiveAnchor</code></td><td>-</td><td>✅</td><td>-</td></tr><tr><td><code>$vocabulary</code></td><td>-</td><td>✅</td><td>✅</td></tr><tr><td><code>allOf</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>anyOf</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>oneOf</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>not</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>if</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>then</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>else</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>properties</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>patternProperties</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>additionalProperties</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>propertyNames</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>items</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>additionalItems</code></td><td>✅</td><td>✅</td><td>-</td></tr><tr><td><code>prefixItems</code></td><td>-</td><td>-</td><td>✅</td></tr><tr><td><code>contains</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>dependentSchemas</code></td><td>-</td><td>✅</td><td>✅</td></tr><tr><td><code>unevaluatedProperties</code></td><td>-</td><td>✅</td><td>✅</td></tr><tr><td><code>unevaluatedItems</code></td><td>-</td><td>✅</td><td>✅</td></tr><tr><td><code>type</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>enum</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>const</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>multipleOf</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>maximum</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>minimum</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>exclusiveMaximum</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>exclusiveMinimum</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>maxLength</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>minLength</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>pattern</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>format</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>maxItems</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>minItems</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>uniqueItems</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>maxProperties</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>minProperties</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>required</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>dependencies</code></td><td>✅</td><td>✅</td><td>-</td></tr><tr><td><code>dependentRequired</code></td><td>-</td><td>✅</td><td>✅</td></tr><tr><td><code>minContains</code></td><td>-</td><td>✅</td><td>✅</td></tr><tr><td><code>maxContains</code></td><td>-</td><td>✅</td><td>✅</td></tr><tr><td><code>title</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>description</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>default</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>examples</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>deprecated</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>$comment</code></td><td>❌</td><td>❌</td><td>❌</td></tr><tr><td><code>readOnly</code></td><td>❌</td><td>❌</td><td>❌</td></tr><tr><td><code>writeOnly</code></td><td>❌</td><td>❌</td><td>❌</td></tr><tr><td><code>contentEncoding</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>contentMediaType</code></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><code>contentSchema</code></td><td>✅</td><td>✅</td><td>✅</td></tr></tbody></table></div></div>
+<div class="my-4 p-4 bg-blue-100 border-l-4 border-blue-500 rounded-lg dark:bg-tombi-900 dark:border-blue-400"><div class="flex items-center gap-2 font-medium text-blue-800 dark:text-blue-200 mb-2"><span>🗒️</span><span>Note</span></div><div class="text-gray-700 dark:text-gray-300"><p>Tombi also accepts some legacy keywords for compatibility even when they are not part of the
+selected dialect. For example, <code>definitions</code> is still loaded alongside <code>$defs</code> in draft-2019-09
+and draft-2020-12, <code>dependencies</code> is still honored in draft-2020-12, and <code>prefixItems</code> is
+accepted even before draft-2020-12.</p></div></div>
+<div class="my-4 p-4 bg-blue-100 border-l-4 border-blue-500 rounded-lg dark:bg-tombi-900 dark:border-blue-400"><div class="flex items-center gap-2 font-medium text-blue-800 dark:text-blue-200 mb-2"><span>🗒️</span><span>Note</span></div><div class="text-gray-700 dark:text-gray-300"><p><code>format</code>, <code>title</code>, <code>description</code>, <code>default</code>, <code>examples</code>, <code>deprecated</code>, <code>contentEncoding</code>, <code>contentMediaType</code>, and <code>contentSchema</code> are not all treated as pure assertion keywords.
+Some are used as annotations for validation behavior, hover, completion, or diagnostics.</p></div></div>
+<div class="my-4 p-4 bg-blue-100 border-l-4 border-blue-500 rounded-lg dark:bg-tombi-900 dark:border-blue-400"><div class="flex items-center gap-2 font-medium text-blue-800 dark:text-blue-200 mb-2"><span>🗒️</span><span>Note</span></div><div class="text-gray-700 dark:text-gray-300"><p>Tombi defaults to a non-standard <code>strict</code> behavior: when <code>additionalProperties</code> is omitted, objects are treated as closed unless you disable <code>schema.strict</code>.</p></div></div><div class="mt-8 pt-8 border-t border-gray-200 flex justify-between"><a href="/tombi/v1.11.3/docs/environment-variables" class="no-underline text-blue-500 hover:text-blue-600 inactive"><svg color="currentColor" fill="currentColor" stroke-width="0" style="overflow:visible" viewBox="0 0 24 24" size="12" height="12" width="12" xmlns="http://www.w3.org/2000/svg"><use href="/tombi/v1.11.3/icons.svg#icon-8"></use></svg> Environment Variables</a><a href="/tombi/v1.11.3/docs/comment-directive" class="no-underline text-blue-500 hover:text-blue-600 ml-auto inactive">Comment Directive <svg color="currentColor" fill="currentColor" stroke-width="0" style="overflow:visible" viewBox="0 0 24 24" size="12" height="12" width="12" xmlns="http://www.w3.org/2000/svg"><use href="/tombi/v1.11.3/icons.svg#icon-9"></use></svg></a></div></div></main></div></div></main></div></body></html>

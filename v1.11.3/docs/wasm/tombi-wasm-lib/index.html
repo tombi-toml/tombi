@@ -1,0 +1,92 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title data-sm="00000001000000004000000200000000">Formatter and Linter</title><meta data-sm="00000001000000004000000200000010" name="description" content="Use the tombi-wasm-lib package for formatting and linting."><meta data-sm="00000001000000004000000200000020" property="og:type" content="website"><meta data-sm="00000001000000004000000200000030" property="og:url" content="https://tombi-toml.github.io/tombi/v1.11.3/docs/wasm/tombi-wasm-lib"><meta data-sm="00000001000000004000000200000040" property="og:title" content="Formatter and Linter"><meta data-sm="00000001000000004000000200000050" property="og:description" content="Use the tombi-wasm-lib package for formatting and linting."><meta data-sm="00000001000000004000000200000060" property="og:image" content="https://raw.githubusercontent.com/tombi-toml/tombi/v1.11.3/docs/public/ogp.png"><meta data-sm="00000001000000004000000200000070" property="og:site_name" content="Tombi"><meta data-sm="00000001000000004000000200000080" property="twitter:card" content="summary_large_image"><meta data-sm="00000001000000004000000200000090" property="twitter:url" content="https://tombi-toml.github.io/tombi/v1.11.3/docs/wasm/tombi-wasm-lib"><meta data-sm="000000010000000040000002000000a100" property="twitter:title" content="Formatter and Linter"><meta data-sm="000000010000000040000002000000a110" property="twitter:description" content="Use the tombi-wasm-lib package for formatting and linting."><meta data-sm="000000010000000040000002000000a120" property="twitter:image" content="https://raw.githubusercontent.com/tombi-toml/tombi/v1.11.3/docs/public/ogp.png"><meta name="tombi-archive-base" content="/tombi/v1.11.3"><link rel="icon" href="https://raw.githubusercontent.com/tombi-toml/tombi/v1.11.3/docs/public/favicon.ico"><link rel="stylesheet" href="/tombi/v1.11.3/archive.css"><link rel="stylesheet" href="/tombi/common/v1/archive/archive-ui.css"><link rel="stylesheet" href="/tombi/common/v1/version-picker.css"><script src="/tombi/common/v1/archive/theme.js"></script><script type="module" src="/tombi/common/v1/archive/archive.js"></script><script defer src="/tombi/common/v1/version-picker.js"></script></head><body><div class="min-h-screen bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100"><div id="archive-header"></div><main class="flex-1 mt-20 pt-0"><div class="max-w-7xl mx-auto"><div class="flex w-full max-w-[100vw]"><nav id="archive-sidebar" class="w-[250px] shrink-0 h-screen sticky top-0 overflow-y-auto p-4 bg-[--color-bg-secondary] border-r border-[--color-border] md:block hidden" aria-label="Documentation"></nav><main tabindex="-1" class="flex-1 min-w-0 p-4 mdx-content min-h-screen max-w-full outline-none"><div class="max-w-full">
+<h1 id="tombi-wasm-lib" class="group relative heading-with-anchor "><code>tombi-wasm-lib</code></h1>
+<p><code>tombi-wasm-lib</code> provides Tombi's formatter and linter for browsers. For
+server-side Node.js, use <a href="/tombi/v1.11.3/docs/library/nodejs"><code>tombi-lib</code></a> instead.</p>
+<h2 id="install" class="group relative heading-with-anchor ">Install</h2>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-sh overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-sh" tabindex="-1"><span class="f">pnpm</span> <span class="f">add</span> tombi-wasm-lib</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<h2 id="format-toml" class="group relative heading-with-anchor ">Format TOML</h2>
+<p>Initialize the WASM module before calling <code>format</code>:</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-ts overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-ts" tabindex="-1"><span class="k">import</span> init, { format, <span class="k">type</span> <span class="t">TombiError</span> } <span class="k">from</span> <span class="s">"tombi-wasm-lib"</span>;
+
+<span class="k">await</span> <span class="f">init</span>();
+
+<span class="k">const</span> source = <span class="s">`</span><span class="s">
+[package]
+name = "example"
+</span><span class="s">`</span>;
+
+<span class="k">try</span> {
+  <span class="k">const</span> { formatted, diagnostics } = <span class="k">await</span> <span class="f">format</span>(source, <span class="s">"Cargo.toml"</span>);
+
+  <span class="k">if</span> (formatted !== <span class="k">undefined</span>) {
+    <span class="s">console</span>.<span class="f">log</span>(formatted);
+  }
+
+  <span class="k">for</span> (<span class="k">const</span> diagnostic <span class="k">of</span> diagnostics) {
+    <span class="k">if</span> (diagnostic.level === <span class="s">"error"</span>) {
+      <span class="s">console</span>.<span class="f">error</span>(diagnostic.message);
+    } <span class="k">else</span> {
+      <span class="s">console</span>.<span class="f">warn</span>(diagnostic.message);
+    }
+  }
+} <span class="k">catch</span> (error) {
+  <span class="s">console</span>.<span class="f">error</span>((error <span class="k">as</span> TombiError).message);
+}</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<p><code>format</code> resolves to an object containing the formatted TOML when formatting
+succeeds and an array of diagnostics. The diagnostics array is empty when none were
+reported. When diagnostics prevent formatting, <code>formatted</code> is omitted.
+Configuration and execution errors reject the Promise as <code>TombiError</code>.</p>
+<h2 id="lint-toml" class="group relative heading-with-anchor ">Lint TOML</h2>
+<p>Initialize the WASM module before calling <code>lint</code>:</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-ts overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-ts" tabindex="-1"><span class="k">import</span> init, { lint, <span class="k">type</span> <span class="t">TombiError</span> } <span class="k">from</span> <span class="s">"tombi-wasm-lib"</span>;
+
+<span class="k">await</span> <span class="f">init</span>();
+
+<span class="k">const</span> source = <span class="s">`</span><span class="s">
+[package]
+name = "example"
+</span><span class="s">`</span>;
+
+<span class="k">try</span> {
+  <span class="k">const</span> { diagnostics } = <span class="k">await</span> <span class="f">lint</span>(source, <span class="s">"Cargo.toml"</span>);
+
+  <span class="k">if</span> (diagnostics.length &gt; <span class="n">0</span>) {
+    <span class="k">for</span> (<span class="k">const</span> diagnostic <span class="k">of</span> diagnostics) {
+      <span class="k">const</span> message = <span class="s">`</span><span class="p"><span class="k">${</span>diagnostic.message<span class="k">}</span></span><span class="s"> (</span><span class="p"><span class="k">${</span>diagnostic.range.start.line<span class="k">}</span></span><span class="s">:</span><span class="p"><span class="k">${</span>diagnostic.range.start.column<span class="k">}</span></span><span class="s">)</span><span class="s">`</span>;
+
+      <span class="k">if</span> (diagnostic.level === <span class="s">"error"</span>) {
+        <span class="s">console</span>.<span class="f">error</span>(message);
+      } <span class="k">else</span> {
+        <span class="s">console</span>.<span class="f">warn</span>(message);
+      }
+    }
+  } <span class="k">else</span> {
+    <span class="s">console</span>.<span class="f">log</span>(<span class="s">"No diagnostics"</span>);
+  }
+} <span class="k">catch</span> (error) {
+  <span class="c">// Configuration and execution errors reject the Promise.</span>
+  <span class="s">console</span>.<span class="f">error</span>((error <span class="k">as</span> TombiError).message);
+}</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<p><code>lint</code> resolves to an object containing a diagnostics array. The array is empty when
+no diagnostics were reported. Configuration and execution errors reject the Promise
+as <code>TombiError</code>.</p>
+<p>Both functions accept an optional options object as the third argument. <code>config</code>
+replaces the automatically discovered configuration and accepts an object or string:</p>
+<div class="code-block-wrapper relative max-w-full overflow-hidden my-4"><pre class="language-ts overflow-x-auto max-w-full pr-20" tabindex="-1"><code class="language-ts" tabindex="-1"><span class="k">const</span> config = {
+  content: <span class="s">`</span><span class="s">
+toml-version = "v1.1.0"
+
+[format.rules]
+indent-width = 4
+</span><span class="s">`</span>,
+  path: <span class="s">"/workspace/tombi.toml"</span>,
+};
+
+<span class="k">await</span> <span class="f">format</span>(source, <span class="s">"Cargo.toml"</span>, { config });
+<span class="k">await</span> <span class="f">lint</span>(source, <span class="s">"Cargo.toml"</span>, { config });
+
+<span class="c">// The configuration content can be passed as a string shorthand. It is</span>
+<span class="c">// treated as the content of a virtual `tombi.toml`.</span>
+<span class="k">await</span> <span class="f">format</span>(source, <span class="s">"Cargo.toml"</span>, { config: config.content });</code></pre><div class="copy-button language-text"><button type="button" class="top-0 right-0 border-0 mt-2 bg-transparent text-gray-400 hover:text-gray-300" aria-label="Copy code to clipboard"><svg stroke="currentColor" color="currentColor" fill="none" stroke-width="2" style="overflow:visible" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 " width="1em" height="1em" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><use href="/tombi/v1.11.3/icons.svg#icon-7"></use></svg></button></div></div>
+<p>When <code>config</code> is omitted, Tombi uses automatic discovery and falls back to the
+default configuration if no configuration file is found.</p><div class="mt-8 pt-8 border-t border-gray-200 flex justify-between"><a href="/tombi/v1.11.3/docs/wasm" class="no-underline text-blue-500 hover:text-blue-600 active"><svg color="currentColor" fill="currentColor" stroke-width="0" style="overflow:visible" viewBox="0 0 24 24" size="12" height="12" width="12" xmlns="http://www.w3.org/2000/svg"><use href="/tombi/v1.11.3/icons.svg#icon-8"></use></svg> WebAssembly</a><a href="/tombi/v1.11.3/docs/wasm/tombi-wasm-lsp" class="no-underline text-blue-500 hover:text-blue-600 ml-auto inactive">Language Server <svg color="currentColor" fill="currentColor" stroke-width="0" style="overflow:visible" viewBox="0 0 24 24" size="12" height="12" width="12" xmlns="http://www.w3.org/2000/svg"><use href="/tombi/v1.11.3/icons.svg#icon-9"></use></svg></a></div></div></main></div></div></main></div></body></html>
