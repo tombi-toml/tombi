@@ -45,24 +45,44 @@ mobile.style.maxHeight = "calc(100vh - 5rem)";
 if (mobile.classList.contains("grid")) mobile.style.gridTemplateRows = "1fr";
 mobile.setAttribute("aria-label", "Site navigation");
 for (const control of mobile.querySelectorAll("a,button")) control.tabIndex = 0;
-mobile.addEventListener("click", (event) => {
-  const button = event.target.closest("button");
-  if (!button) return;
-  event.preventDefault();
-  const expanded = button.getAttribute("aria-expanded") !== "true";
+const mobileSections = new Map();
+const setMobileExpanded = (button, expanded) => {
   button.setAttribute("aria-expanded", String(expanded));
   button.setAttribute(
     "aria-label",
     expanded ? "Collapse section" : "Expand section",
   );
   button.querySelector("svg")?.classList.toggle("rotate-90", expanded);
-  const panel = button.closest("a").nextElementSibling;
+  const panel = mobileSections.get(button);
   if (panel.classList.contains("grid")) {
     panel.style.gridTemplateRows = expanded ? "1fr" : "0fr";
     panel.inert = !expanded;
   } else {
     panel.style.maxHeight = expanded ? "none" : "0px";
   }
+};
+let currentMobileLink;
+for (const anchor of mobile.querySelectorAll("a")) {
+  anchor.removeAttribute("aria-current");
+  if (
+    anchor.origin === location.origin &&
+    normalize(anchor.pathname) === currentPath
+  ) {
+    anchor.setAttribute("aria-current", "page");
+    currentMobileLink = anchor;
+  }
+}
+for (const button of mobile.querySelectorAll("a button[aria-expanded]")) {
+  const panel = button.closest("a").nextElementSibling;
+  if (!panel) continue;
+  mobileSections.set(button, panel);
+  setMobileExpanded(button, panel.contains(currentMobileLink));
+}
+mobile.addEventListener("click", (event) => {
+  const button = event.target.closest("button");
+  if (!mobileSections.has(button)) return;
+  event.preventDefault();
+  setMobileExpanded(button, button.getAttribute("aria-expanded") !== "true");
 });
 const mobileLogo = document.querySelector("#mobile-logo");
 mobileLogo.setAttribute("aria-expanded", "false");

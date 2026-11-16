@@ -48,6 +48,12 @@
   font-weight: bold;
   color: var(--color-primary);
 }
+#archive-mobile a[aria-current="page"] {
+  color: #fff;
+}
+:root.dark #archive-mobile a[aria-current="page"] {
+  color: #facc15;
+}
 [data-tabs] button[aria-selected="true"] {
   color: var(--color-text);
 }
