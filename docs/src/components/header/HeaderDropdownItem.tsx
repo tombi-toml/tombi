@@ -1,4 +1,4 @@
-import { A } from "@solidjs/router";
+import { A, useLocation, useResolvedPath } from "@solidjs/router";
 import { IoChevronForward } from "solid-icons/io";
 import type { ParentProps } from "solid-js";
 import { createEffect, createSignal, For } from "solid-js";
@@ -16,6 +16,15 @@ interface HeaderDropdownItemProps {
 export function HeaderDropdownItem(
   props: ParentProps<HeaderDropdownItemProps>,
 ) {
+  const location = useLocation();
+  const resolvedPath = useResolvedPath(() => props.href);
+  const isCurrentPage = () =>
+    location.pathname.replace(/\/+$/, "") ===
+      resolvedPath()?.replace(/\/+$/, "") &&
+    !props.childrenItems?.some(
+      (child) =>
+        child.path.replace(/\/+$/, "") === props.href.replace(/\/+$/, ""),
+    );
   const [isExpanded, setIsExpanded] = createSignal(false);
   const childrenVisible = () => props.isExpanded && isExpanded();
 
@@ -60,7 +69,11 @@ export function HeaderDropdownItem(
         onClick={handleClick}
         tabindex={props.isExpanded ? 0 : -1}
       >
-        <span class="flex-grow" style={{ "padding-left": `${level}rem` }}>
+        <span
+          class="flex-grow"
+          classList={{ "text-yellow": isCurrentPage() }}
+          style={{ "padding-left": `${level}rem` }}
+        >
           {props.children}
         </span>
         {hasChildren && (

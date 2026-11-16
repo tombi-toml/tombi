@@ -38,6 +38,17 @@ if (mobileTitle)
 const sidebar = document.querySelector("#archive-sidebar");
 if (sidebar) sidebar.innerHTML = tree(navigation);
 const mobile = document.querySelector(".header-dropdown");
+const sectionPaths = ["/docs", "/playground"].map(localPath);
+for (const anchor of document.querySelectorAll("header nav a")) {
+  if (mobile.contains(anchor) || anchor.origin !== location.origin) continue;
+  const path = normalize(anchor.pathname);
+  if (!sectionPaths.includes(path)) continue;
+  anchor.setAttribute("data-archive-section", "");
+  anchor.removeAttribute("aria-current");
+  if (currentPath === path || currentPath.startsWith(`${path}/`)) {
+    anchor.setAttribute("aria-current", "location");
+  }
+}
 mobile.id = "archive-mobile";
 mobile.hidden = true;
 mobile.classList.remove("max-h-0");
@@ -68,6 +79,7 @@ for (const anchor of mobile.querySelectorAll("a")) {
     anchor.origin === location.origin &&
     normalize(anchor.pathname) === currentPath
   ) {
+    currentMobileLink?.removeAttribute("aria-current");
     anchor.setAttribute("aria-current", "page");
     currentMobileLink = anchor;
   }

@@ -193,7 +193,7 @@ for (const layout of ["max-height", "grid"]) {
     assertExpanded(languageServer, true);
     assertExpanded(cli, false);
     const currentLink = mobile.querySelector('[aria-current="page"]');
-    assert.equal(dom.window.getComputedStyle(currentLink).color, "rgb(255, 255, 255)");
+    assert.equal(dom.window.getComputedStyle(currentLink).color, "rgb(250, 204, 21)");
     document.documentElement.classList.add("dark");
     assert.equal(dom.window.getComputedStyle(currentLink).color, "rgb(250, 204, 21)");
     for (const [id, label, expanded] of [
@@ -224,5 +224,73 @@ for (const layout of ["max-height", "grid"]) {
     assertExpanded(languageServer, true);
     assertExpanded(cli, true);
     dom.window.close();
+  });
+}
+
+test("archived mobile menu selects Overview without also selecting Docs", async () => {
+  const base = "/tombi/v1.11.2";
+  const shell = `<header><a id="mobile-logo"></a><nav><a href="${base}/docs">Docs</a></nav><input><div class="header-dropdown"><a href="${base}/docs"><span>Docs</span><button aria-expanded="false"><svg></svg></button></a><div><a href="${base}/docs"><span>Overview</span></a></div></div></header>`;
+  const dom = new JSDOM(`<style>${styles}</style><meta name="tombi-archive-base" content="${base}"><div id="archive-header"></div>`, { url: `https://example.com${base}/docs/` });
+  try {
+    await runInNewContext(`(async () => {${source}\n})()`, {
+      document: dom.window.document,
+      location: dom.window.location,
+      fetch: async () => ({
+        ok: true,
+        text: async () => shell,
+        json: async () => [],
+      }),
+    });
+    const mobile = dom.window.document.querySelector("#archive-mobile");
+    assert.deepEqual(
+      Array.from(mobile.querySelectorAll('[aria-current="page"]'), (anchor) => anchor.textContent),
+      ["Overview"],
+    );
+    assert.equal(dom.window.getComputedStyle(mobile.querySelector("a")).color, "rgb(255, 255, 255)");
+  } finally {
+    dom.window.close();
+  }
+});
+
+for (const [path, section] of [
+  ["/", undefined],
+  ["/docs", "Docs"],
+  ["/docs/language-server/diagnostics/", "Docs"],
+  ["/playground/", "Playground"],
+  ["/playground/example/", "Playground"],
+  ["/docs-other", undefined],
+  ["/playground-other", undefined],
+]) {
+  test(`archived header highlights the current section for ${path}`, async () => {
+    const base = "/tombi/v1.11.2";
+    const shell = `<header><nav><a id="mobile-logo"></a><a href="${base}/docs" aria-current="page">Docs</a><a href="${base}/playground">Playground</a><a href="https://other.example${base}/docs">External</a><input></nav><div class="header-dropdown"><a href="${base}/"><span class="text-yellow">Home</span></a><a href="${base}/docs"><span>Docs</span></a><a href="${base}/playground"><span>Playground</span></a></div></header>`;
+    const dom = new JSDOM(`<style>.text-yellow { color: #facc15; }${styles}</style><meta name="tombi-archive-base" content="${base}"><div id="archive-header"></div>`, { url: `https://example.com${base}${path}` });
+    try {
+      await runInNewContext(`(async () => {${source}\n})()`, {
+        document: dom.window.document,
+        location: dom.window.location,
+        fetch: async () => ({
+          ok: true,
+          text: async () => shell,
+          json: async () => [],
+        }),
+      });
+      const document = dom.window.document;
+      const active = Array.from(document.querySelectorAll('header nav a[aria-current="location"]'));
+      assert.deepEqual(active.map((anchor) => anchor.textContent), section ? [section] : []);
+      const sections = Array.from(document.querySelectorAll('header nav a[data-archive-section]'));
+      assert.deepEqual(sections.map((anchor) => anchor.textContent), ["Docs", "Playground"]);
+      for (const dark of [false, true]) {
+        document.documentElement.classList.toggle("dark", dark);
+        for (const anchor of document.querySelectorAll("#archive-mobile a")) {
+          const current = anchor.getAttribute("aria-current") === "page";
+          const expected = current ? "rgb(250, 204, 21)" : "rgb(255, 255, 255)";
+          assert.equal(dom.window.getComputedStyle(anchor).color, expected);
+          assert.equal(dom.window.getComputedStyle(anchor.querySelector("span")).color, expected);
+        }
+      }
+    } finally {
+      dom.window.close();
+    }
   });
 }
