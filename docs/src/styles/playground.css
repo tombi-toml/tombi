@@ -12,6 +12,10 @@
   display: none;
 }
 
+:root.playground-embedded body {
+  margin: 0;
+}
+
 :root.playground-embedded main {
   margin-top: 0;
   padding-inline: 0;
