@@ -5,12 +5,14 @@
     <title>Page not found</title>
     <script>
       const path = location.pathname.slice("/tombi".length);
-      if (!/^\/(?:main|v[0-9]+\.[0-9]+\.[0-9]+(?:[.-][0-9A-Za-z.-]+)?)(?:\/|$)/.test(path)) {
+      if (path === "/latest" || path === "/latest/") {
+        location.replace("/tombi/" + location.search + location.hash);
+      } else if (!/^\/(?:main|v[0-9]+\.[0-9]+\.[0-9]+(?:[.-][0-9A-Za-z.-]+)?)(?:\/|$)/.test(path)) {
         location.replace("/tombi/main" + path + location.search + location.hash);
       }
     </script>
   </head>
   <body>
-    <p>Page not found. <a href="/tombi/main/">Open the documentation</a>.</p>
+    <p>Page not found. <a href="/tombi/">Open the documentation</a>.</p>
   </body>
 </html>
