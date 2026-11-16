@@ -269,9 +269,42 @@ impl<'a> Plan<'a> {
             push_unskipped(self.source, &skipped, position..base.end, output);
             output.push_str(text);
             position = position.max(base.end);
+            // A line comment must not swallow the text that follows it.
+            if text.contains('#')
+                && next_visible_char(self.source, &skipped, position, span.end)
+                    .is_some_and(|character| character != '\n' && character != '\r')
+            {
+                output.push('\n');
+            }
         }
         push_unskipped(self.source, &skipped, position..span.end, output);
     }
+}
+
+/// The first character at or after `from` that is not blank and not skipped.
+fn next_visible_char(
+    source: &str,
+    skipped: &[Range<usize>],
+    from: usize,
+    to: usize,
+) -> Option<char> {
+    let mut position = from;
+    while position < to {
+        if let Some(skipped) = skipped
+            .iter()
+            .find(|skipped| skipped.start <= position && position < skipped.end)
+        {
+            position = skipped.end;
+            continue;
+        }
+        let character = source[position..].chars().next()?;
+        if character == ' ' || character == '\t' {
+            position += 1;
+            continue;
+        }
+        return Some(character);
+    }
+    None
 }
 
 fn push_unskipped(source: &str, skipped: &[Range<usize>], span: Range<usize>, output: &mut String) {

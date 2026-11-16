@@ -1684,6 +1684,42 @@ requires = [
 
         test_format! {
             #[tokio::test]
+            async fn test_array_comma_on_next_line_after_trailing_comment(
+                r#"
+                key = [
+                  1 # comment
+                  , 2
+                ]
+                "#,
+            ) -> Ok(
+                r#"
+                key = [
+                  1,  # comment
+                  2
+                ]
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
+            async fn test_inline_table_comma_on_next_line_after_trailing_comment(
+                r#"
+                key = { a = 1 # comment
+                  , b = 2 }
+                "#,
+            ) -> Ok(
+                r#"
+                key = {
+                  a = 1,  # comment
+                  b = 2
+                }
+                "#
+            )
+        }
+
+        test_format! {
+            #[tokio::test]
             async fn test_inline_table_with_trailing_comment_directive(
                 r#"
                 key = {
