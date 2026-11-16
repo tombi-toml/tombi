@@ -81,6 +81,16 @@ document.querySelector("#dark-mode-toggle")?.addEventListener("click", () => {
     localStorage.setItem("theme", dark ? "dark" : "light");
   } catch {}
 });
+const playgroundFrame = document.querySelector(".archive-playground-frame");
+if (playgroundFrame) {
+  const removeEmbeddedPadding = () => {
+    playgroundFrame.contentDocument
+      ?.querySelector("main")
+      ?.style.setProperty("padding-inline", "0");
+  };
+  playgroundFrame.addEventListener("load", removeEmbeddedPadding);
+  removeEmbeddedPadding();
+}
 const input = document.querySelector("header input");
 input.tabIndex = 0;
 input.setAttribute("aria-label", "Search documentation");

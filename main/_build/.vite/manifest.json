@@ -847,7 +847,7 @@
     ]
   },
   "src/routes/playground/index.tsx?pick=default&pick=$css": {
-    "file": "assets/index-5nxbaNAF.js",
+    "file": "assets/index-C_DkNcZr.js",
     "name": "index",
     "src": "src/routes/playground/index.tsx?pick=default&pick=$css",
     "isEntry": true,
@@ -868,11 +868,11 @@
       "../node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor.js"
     ],
     "css": [
-      "assets/index-88Ka-5nF.css"
+      "assets/index-DkLlUWa5.css"
     ]
   },
   "virtual:$vinxi/handler/client": {
-    "file": "assets/client-DbsFgKRk.js",
+    "file": "assets/client-BLfgXQB6.js",
     "name": "client",
     "src": "virtual:$vinxi/handler/client",
     "isEntry": true,

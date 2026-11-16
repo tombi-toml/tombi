@@ -54,6 +54,9 @@
 [data-tabs] button[aria-selected="false"] {
   color: #6b7280;
 }
+main:has(> .archive-playground-frame) {
+  padding-inline: 0;
+}
 .archive-playground-frame {
   display: block;
   width: 100%;
