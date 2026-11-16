@@ -45,7 +45,9 @@ for (const anchor of document.querySelectorAll("header nav a")) {
   if (!sectionPaths.includes(path)) continue;
   anchor.setAttribute("data-archive-section", "");
   anchor.removeAttribute("aria-current");
-  if (currentPath === path || currentPath.startsWith(`${path}/`)) {
+  const active = currentPath === path || currentPath.startsWith(`${path}/`);
+  anchor.classList.toggle("header-section-tab-active", active);
+  if (active) {
     anchor.setAttribute("aria-current", "location");
   }
 }
