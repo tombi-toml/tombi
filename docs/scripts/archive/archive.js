@@ -71,6 +71,9 @@ const setMobileExpanded = (button, expanded) => {
     panel.style.removeProperty("height");
     panel.style.gridTemplateRows = expanded ? "1fr" : "0fr";
     panel.inert = !expanded;
+  } else if (panel.style.height) {
+    panel.style.height = expanded ? "auto" : "0px";
+    panel.inert = !expanded;
   } else {
     panel.style.maxHeight = expanded ? "none" : "0px";
   }

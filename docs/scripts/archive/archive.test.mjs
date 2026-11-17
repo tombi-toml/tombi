@@ -149,12 +149,14 @@ for (const frameState of ["loaded", "unloaded", "absent"]) {
   });
 }
 
-for (const layout of ["max-height", "grid", "grid-height"]) {
+for (const layout of ["max-height", "grid", "grid-height", "height"]) {
   test(`archived mobile navigation supports ${layout} shells`, async () => {
     const grid = layout.startsWith("grid");
     const panel = (contents) => grid
       ? `<div class="grid grid-rows-[0fr]"${layout === "grid-height" ? ' style="height:0px"' : ""} inert><div class="min-h-0 overflow-hidden">${contents}</div></div>`
-      : `<div style="max-height:0px">${contents}</div>`;
+      : layout === "height"
+        ? `<div class="overflow-hidden transition-[height]" style="height:0px" inert><div class="overflow-hidden">${contents}</div></div>`
+        : `<div style="max-height:0px">${contents}</div>`;
     const item = (name, path, contents) => `<div><a href="${base}${path}"><span>${name}</span><button aria-expanded="false"><svg></svg></button></a>${panel(contents)}</div>`;
     const base = "/tombi/v1.11.2";
     const currentPath = `${base}/docs/language-server/diagnostics`;
@@ -185,6 +187,9 @@ for (const layout of ["max-height", "grid", "grid-height"]) {
         assert.equal(children.style.gridTemplateRows, expanded ? "1fr" : "0fr");
         assert.equal(children.inert, !expanded);
         if (expanded) assert.notEqual(dom.window.getComputedStyle(children).height, "0px");
+      } else if (layout === "height") {
+        assert.equal(children.style.height, expanded ? "auto" : "0px");
+        assert.equal(children.inert, !expanded);
       } else {
         assert.equal(children.style.maxHeight, expanded ? "none" : "0px");
       }
