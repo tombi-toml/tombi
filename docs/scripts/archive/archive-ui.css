@@ -46,7 +46,10 @@
 }
 #archive-sidebar a[aria-current="page"] {
   font-weight: bold;
-  color: var(--color-primary);
+  color: #000099;
+}
+.dark #archive-sidebar a[aria-current="page"] {
+  color: #facc15;
 }
 #archive-mobile a,
 #archive-mobile a > span {

@@ -149,11 +149,11 @@ for (const frameState of ["loaded", "unloaded", "absent"]) {
   });
 }
 
-for (const layout of ["max-height", "grid"]) {
+for (const layout of ["max-height", "grid", "grid-height"]) {
   test(`archived mobile navigation supports ${layout} shells`, async () => {
-    const grid = layout === "grid";
+    const grid = layout.startsWith("grid");
     const panel = (contents) => grid
-      ? `<div class="grid grid-rows-[0fr]" inert><div class="min-h-0 overflow-hidden">${contents}</div></div>`
+      ? `<div class="grid grid-rows-[0fr]"${layout === "grid-height" ? ' style="height:0px"' : ""} inert><div class="min-h-0 overflow-hidden">${contents}</div></div>`
       : `<div style="max-height:0px">${contents}</div>`;
     const item = (name, path, contents) => `<div><a href="${base}${path}"><span>${name}</span><button aria-expanded="false"><svg></svg></button></a>${panel(contents)}</div>`;
     const base = "/tombi/v1.11.2";
@@ -184,6 +184,7 @@ for (const layout of ["max-height", "grid"]) {
       if (grid) {
         assert.equal(children.style.gridTemplateRows, expanded ? "1fr" : "0fr");
         assert.equal(children.inert, !expanded);
+        if (expanded) assert.notEqual(dom.window.getComputedStyle(children).height, "0px");
       } else {
         assert.equal(children.style.maxHeight, expanded ? "none" : "0px");
       }
@@ -226,6 +227,36 @@ for (const layout of ["max-height", "grid"]) {
     dom.window.close();
   });
 }
+
+test("archived sidebar highlights the current page in both themes", async () => {
+  const base = "/tombi/v1.11.3";
+  const shell = '<header><a id="mobile-logo"></a><input><div class="header-dropdown"></div></header>';
+  const navigation = [{ title: "Docs", path: "/docs", children: [
+    { title: "Configuration", path: "/docs/configuration" },
+    { title: "Formatter", path: "/docs/formatter" },
+  ] }];
+  const dom = new JSDOM(`<style>${styles}</style><meta name="tombi-archive-base" content="${base}"><div id="archive-header"></div><aside id="archive-sidebar"></aside>`, { url: `https://example.com${base}/docs/configuration/` });
+  try {
+    const document = dom.window.document;
+    await runInNewContext(`(async () => {${source}\n})()`, {
+      document,
+      location: dom.window.location,
+      fetch: async () => ({
+        ok: true,
+        text: async () => shell,
+        json: async () => navigation,
+      }),
+    });
+    const currentLinks = document.querySelectorAll('#archive-sidebar a[aria-current="page"]');
+    assert.deepEqual(Array.from(currentLinks, (anchor) => anchor.textContent), ["Configuration"]);
+    for (const [dark, color] of [[false, "rgb(0, 0, 153)"], [true, "rgb(250, 204, 21)"]]) {
+      document.documentElement.classList.toggle("dark", dark);
+      assert.equal(dom.window.getComputedStyle(currentLinks[0]).color, color);
+    }
+  } finally {
+    dom.window.close();
+  }
+});
 
 test("archived mobile menu selects Overview without also selecting Docs", async () => {
   const base = "/tombi/v1.11.2";
