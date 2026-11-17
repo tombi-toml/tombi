@@ -61,7 +61,7 @@ impl TryFrom<jiff::Zoned> for OffsetDateTime {
         let date = LocalDate::try_from(value.date())?;
         let time = LocalTime::from(value.time());
         let seconds = value.offset().seconds();
-        if seconds % 60 != 0 || !(-86_400..=86_400).contains(&seconds) {
+        if seconds % 60 != 0 || !(-86_399..=86_399).contains(&seconds) {
             return Err(conversion::Error::InvalidTimeZoneOffset);
         }
         Ok(Self::from_ymd_hms_nano(

@@ -86,7 +86,7 @@ pub mod conversion {
     pub enum Error {
         #[error("year must be between 0 and 9999")]
         InvalidYear,
-        #[error("time zone offset must be whole minutes between -24:00 and 24:00")]
+        #[error("time zone offset must be whole minutes between -23:59 and 23:59")]
         InvalidTimeZoneOffset,
     }
 }

@@ -51,8 +51,8 @@ fn rejects_negative_year(#[case] year: i16) {
 #[case(0, "+00:00")]
 #[case(19800, "+05:30")]
 #[case(-12600, "-03:30")]
-#[case(86400, "+24:00")]
-#[case(-86400, "-24:00")]
+#[case(86340, "+23:59")]
+#[case(-86340, "-23:59")]
 fn offset_date_time_preserves_minutes_and_nanoseconds(#[case] seconds: i32, #[case] offset: &str) {
     let datetime = civil::date(2024, 2, 29).at(12, 34, 56, 123456789);
     let zoned = datetime
@@ -69,7 +69,9 @@ fn offset_date_time_preserves_minutes_and_nanoseconds(#[case] seconds: i32, #[ca
 #[rstest]
 #[case(1)]
 #[case(-1)]
+#[case(86400)]
 #[case(86460)]
+#[case(-86400)]
 #[case(-86460)]
 fn rejects_unrepresentable_offset(#[case] seconds: i32) {
     let zoned = civil::date(2024, 2, 29)
