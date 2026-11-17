@@ -48,7 +48,7 @@ http = "1.5.0"
 hyper-util = { version = "0.1.20", default-features = false, features = ["client-proxy"] }
 ignore = "0.4.33"
 itertools = "0.14.0"
-jiff = { version = "0.2", features = ["serde", "js"] }
+jiff = { version = "0.2", features = ["js", "serde"] }
 js-sys = "0.3.77"
 log = "0.4.22"
 memchr = "2.7.5"
