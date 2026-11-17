@@ -840,7 +840,7 @@ where
 mod tests {
 
     use super::*;
-    use chrono::{DateTime, TimeZone, Utc};
+    use jiff::Timestamp;
     use serde::Serialize;
     use tombi_test_lib::toml_text_assert_eq;
 
@@ -998,13 +998,13 @@ three = 3
     async fn test_serialize_datetime() {
         #[derive(Serialize)]
         struct DateTimeTest {
-            created_at: DateTime<Utc>,
-            updated_at: DateTime<Utc>,
+            created_at: Timestamp,
+            updated_at: Timestamp,
         }
 
         let test = DateTimeTest {
-            created_at: Utc.with_ymd_and_hms(2023, 5, 15, 10, 30, 0).unwrap(),
-            updated_at: Utc.with_ymd_and_hms(2023, 7, 20, 14, 45, 30).unwrap(),
+            created_at: "2023-05-15T10:30:00Z".parse().unwrap(),
+            updated_at: "2023-07-20T14:45:30Z".parse().unwrap(),
         };
 
         let toml = to_string_async(&test)

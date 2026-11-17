@@ -7,8 +7,8 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
-chrono.workspace = true
 env_logger.workspace = true
+jiff.workspace = true
 tempfile.workspace = true
 tombi-uri.workspace = true
 

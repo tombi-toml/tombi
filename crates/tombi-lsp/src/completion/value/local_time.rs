@@ -200,14 +200,13 @@ pub fn type_hint_local_time(
     schema_base_uri: Option<&SchemaUri>,
     completion_hint: Option<CompletionHint>,
 ) -> Vec<CompletionContent> {
-    let mut today = chrono::Local::now();
-    if let Some(time) = chrono::NaiveTime::from_hms_opt(0, 0, 0) {
-        today = match today.with_time(time) {
-            chrono::LocalResult::Single(today) => today,
-            _ => today,
-        };
-    };
-    let label = today.format("%H:%M:%S%.3f").to_string();
+    let now = jiff::Zoned::now();
+    let today = now
+        .time_zone()
+        .to_ambiguous_zoned(now.date().at(0, 0, 0, 0))
+        .unambiguous()
+        .unwrap_or(now);
+    let label = today.strftime("%H:%M:%S%.3f").to_string();
     let edit = CompletionEdit::new_selectable_literal(&label, offset, completion_hint);
 
     vec![CompletionContent::new_type_hint_value(

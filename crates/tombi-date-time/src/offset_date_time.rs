@@ -33,13 +33,36 @@ impl OffsetDateTime {
         milli: u32,
         offset: crate::TimeZoneOffset,
     ) -> Self {
+        Self::from_ymd_hms_nano(
+            year,
+            month,
+            day,
+            hour,
+            minute,
+            second,
+            milli * 1_000_000,
+            offset,
+        )
+    }
+
+    pub fn from_ymd_hms_nano(
+        year: u16,
+        month: u8,
+        day: u8,
+        hour: u8,
+        minute: u8,
+        second: u8,
+        nanosecond: u32,
+        offset: crate::TimeZoneOffset,
+    ) -> Self {
+        debug_assert!(nanosecond < 1_000_000_000);
         Self {
             date: crate::private::Date { year, month, day },
             time: crate::private::Time {
                 hour,
                 minute,
                 second,
-                nanosecond: milli * 1_000_000,
+                nanosecond,
             },
             offset,
         }
@@ -100,26 +123,6 @@ impl std::fmt::Display for OffsetDateTime {
         write!(f, "T")?;
         self.time.fmt(f)?;
         self.offset.fmt(f)
-    }
-}
-
-#[cfg(feature = "chrono")]
-impl From<chrono::DateTime<chrono::FixedOffset>> for OffsetDateTime {
-    fn from(value: chrono::DateTime<chrono::FixedOffset>) -> Self {
-        use chrono::Datelike;
-        use chrono::Timelike;
-
-        Self::from_ymd_hms(
-            value.year() as u16,
-            value.month() as u8,
-            value.day() as u8,
-            value.hour() as u8,
-            value.minute() as u8,
-            value.second() as u8,
-            crate::TimeZoneOffset::Custom {
-                minutes: value.offset().local_minus_utc() as i16,
-            },
-        )
     }
 }
 

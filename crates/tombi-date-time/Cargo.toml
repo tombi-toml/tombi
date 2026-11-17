@@ -7,12 +7,12 @@ repository.workspace = true
 license.workspace = true
 
 [features]
-default = ["chrono", "serde"]
-chrono = ["dep:chrono"]
+default = ["jiff", "serde"]
+jiff = ["dep:jiff"]
 serde = ["dep:serde"]
 
 [dependencies]
-chrono = { workspace = true, optional = true }
+jiff = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
 thiserror.workspace = true
 
