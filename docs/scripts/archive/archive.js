@@ -68,6 +68,7 @@ const setMobileExpanded = (button, expanded) => {
   button.querySelector("svg")?.classList.toggle("rotate-90", expanded);
   const panel = mobileSections.get(button);
   if (panel.classList.contains("grid")) {
+    panel.style.removeProperty("height");
     panel.style.gridTemplateRows = expanded ? "1fr" : "0fr";
     panel.inert = !expanded;
   } else {
