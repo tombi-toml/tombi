@@ -200,7 +200,7 @@ pub fn type_hint_local_date(
     schema_base_uri: Option<&SchemaUri>,
     completion_hint: Option<CompletionHint>,
 ) -> Vec<CompletionContent> {
-    let label = chrono::Local::now().format("%Y-%m-%d").to_string();
+    let label = jiff::Zoned::now().strftime("%Y-%m-%d").to_string();
     let edit = CompletionEdit::new_selectable_literal(&label, offset, completion_hint);
 
     vec![CompletionContent::new_type_hint_value(

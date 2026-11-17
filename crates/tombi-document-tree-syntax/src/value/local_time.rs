@@ -2,7 +2,7 @@ use tombi_ast_syntax::TombiValueCommentDirective;
 
 use crate::{
     DocumentTreeAndErrors, IntoDocumentTreeWithContext, ValueImpl, ValueType,
-    support::chrono::try_new_local_time, value::collect_comment_directives_and_errors,
+    support::date_time::try_new_local_time, value::collect_comment_directives_and_errors,
 };
 
 #[derive(Debug, Clone, PartialEq)]

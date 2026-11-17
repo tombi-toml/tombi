@@ -78,23 +78,3 @@ impl<'de> serde::de::Deserialize<'de> for LocalDate {
         }
     }
 }
-
-#[cfg(feature = "chrono")]
-impl From<chrono::NaiveDate> for LocalDate {
-    fn from(value: chrono::NaiveDate) -> Self {
-        use chrono::Datelike;
-
-        Self(crate::private::Date {
-            year: value.year() as u16,
-            month: value.month() as u8,
-            day: value.day() as u8,
-        })
-    }
-}
-
-#[cfg(feature = "chrono")]
-impl From<chrono::DateTime<chrono::Local>> for LocalDate {
-    fn from(value: chrono::DateTime<chrono::Local>) -> Self {
-        value.naive_local().date().into()
-    }
-}

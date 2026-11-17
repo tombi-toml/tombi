@@ -78,3 +78,15 @@ pub mod de {
     #[non_exhaustive]
     pub enum Error {}
 }
+
+#[cfg(feature = "jiff")]
+pub mod conversion {
+    #[derive(thiserror::Error, Debug, Clone, PartialEq, Eq)]
+    #[non_exhaustive]
+    pub enum Error {
+        #[error("year must be between 0 and 9999")]
+        InvalidYear,
+        #[error("time zone offset must be whole minutes between -23:59 and 23:59")]
+        InvalidTimeZoneOffset,
+    }
+}

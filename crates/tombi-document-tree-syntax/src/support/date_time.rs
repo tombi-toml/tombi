@@ -29,21 +29,6 @@ pub enum ParseError {
     OptionalSeconds,
 }
 
-impl From<chrono::format::ParseErrorKind> for ParseError {
-    fn from(kind: chrono::format::ParseErrorKind) -> Self {
-        match kind {
-            chrono::format::ParseErrorKind::OutOfRange => Self::OutOfRange,
-            chrono::format::ParseErrorKind::Impossible => Self::Impossible,
-            chrono::format::ParseErrorKind::NotEnough => Self::NotEnough,
-            chrono::format::ParseErrorKind::Invalid => Self::Invalid,
-            chrono::format::ParseErrorKind::TooShort => Self::TooShort,
-            chrono::format::ParseErrorKind::TooLong => Self::TooLong,
-            chrono::format::ParseErrorKind::BadFormat => Self::BadFormat,
-            chrono::format::ParseErrorKind::__Nonexhaustive => unreachable!(),
-        }
-    }
-}
-
 pub(crate) fn try_new_offset_date_time(
     node: &tombi_ast_syntax::OffsetDateTime<'_>,
     toml_version: TomlVersion,

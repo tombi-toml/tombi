@@ -5,8 +5,3 @@
 id = "GHSA-gcqx-w48m-w2h4"
 ignoreUntil = 2026-12-11
 reason = "deepmerge: @rollup/plugin-node-resolve 16.0.3 calls deepMerge only with static defaults; no fixed version released yet"
-
-[[IgnoredVulns]]
-id = "RUSTSEC-2026-0543"
-ignoreUntil = 2027-02-17
-reason = "Informational unmaintained advisory with no patched version; review chrono and schemars migration before expiry"

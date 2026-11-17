@@ -1,4 +1,6 @@
 mod error;
+#[cfg(feature = "jiff")]
+mod jiff;
 mod local_date;
 mod local_date_time;
 mod local_time;

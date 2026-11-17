@@ -32,7 +32,6 @@ license = "MIT"
 addr = "0.15.6"
 anyhow = "1.0.103"
 bytes = "1.11.1"
-chrono = { version = "0.4.41", features = ["serde"] }
 clap = { version = "4.5.37", features = ["derive", "env", "string"] }
 console_error_panic_hook = "0.1.7"
 convert_case = "0.6.0"
@@ -49,6 +48,7 @@ http = "1.5.0"
 hyper-util = { version = "0.1.20", default-features = false, features = ["client-proxy"] }
 ignore = "0.4.33"
 itertools = "0.14.0"
+jiff = { version = "0.2", features = ["js", "serde"] }
 js-sys = "0.3.77"
 log = "0.4.22"
 memchr = "2.7.5"

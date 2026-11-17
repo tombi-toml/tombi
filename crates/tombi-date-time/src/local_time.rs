@@ -109,17 +109,3 @@ impl<'de> serde::de::Deserialize<'de> for LocalTime {
         }
     }
 }
-
-#[cfg(feature = "chrono")]
-impl From<chrono::NaiveTime> for LocalTime {
-    fn from(value: chrono::NaiveTime) -> Self {
-        use chrono::Timelike;
-
-        Self(crate::private::Time {
-            hour: value.hour() as u8,
-            minute: value.minute() as u8,
-            second: value.second() as u8,
-            nanosecond: value.nanosecond(),
-        })
-    }
-}

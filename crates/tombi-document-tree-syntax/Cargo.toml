@@ -11,7 +11,6 @@ default = ["diagnostic"]
 diagnostic = ["dep:tombi-diagnostic"]
 
 [dependencies]
-chrono.workspace = true
 itertools.workspace = true
 thiserror.workspace = true
 tombi-accessor.workspace = true

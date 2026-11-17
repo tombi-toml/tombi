@@ -16,7 +16,6 @@ native = ["tokio/rt-multi-thread"]
 wasm = []
 
 [dependencies]
-chrono.workspace = true
 dirs.workspace = true
 itertools.workspace = true
 log.workspace = true
@@ -42,6 +41,7 @@ tombi-validator.workspace = true
 typed-builder.workspace = true
 
 [dev-dependencies]
+jiff.workspace = true
 pretty_assertions.workspace = true
 tempfile.workspace = true
 tokio = { workspace = true, features = ["macros"] }

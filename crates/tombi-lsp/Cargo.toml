@@ -9,9 +9,9 @@ license.workspace = true
 ignored = ["tombi-diagnostic"]  # Only enables its `lsp` feature, which converts diagnostics
 
 [dependencies]
-chrono.workspace = true
 futures.workspace = true
 itertools.workspace = true
+jiff.workspace = true
 log.workspace = true
 serde.workspace = true
 serde_json.workspace = true

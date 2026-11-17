@@ -375,10 +375,10 @@ struct TypeTest {
     string: Option<String>,
     #[validate(length(min = 2, max = 10))]
     array: Option<Vec<LiteralValue>>,
-    offset_date_time: Option<chrono::DateTime<chrono::FixedOffset>>,
-    local_date_time: Option<chrono::NaiveDateTime>,
-    local_date: Option<chrono::NaiveDate>,
-    local_time: Option<chrono::NaiveTime>,
+    offset_date_time: Option<jiff::Timestamp>,
+    local_date_time: Option<jiff::civil::DateTime>,
+    local_date: Option<jiff::civil::Date>,
+    local_time: Option<jiff::civil::Time>,
     literal: Option<LiteralValue>,
     table: Option<TableValue>,
     table_allows_empty_key: Option<TableValueAllowsEmptyKey>,
@@ -394,10 +394,10 @@ enum LiteralValue {
     Integer(#[validate(range(min = 1, max = 10))] i64),
     Float(#[validate(range(min = 1, max = 10))] f64),
     String(#[validate(length(min = 1, max = 10))] String),
-    OffsetDateTime(chrono::DateTime<chrono::FixedOffset>),
-    LocalDateTime(chrono::NaiveDateTime),
-    LocalDate(chrono::NaiveDate),
-    LocalTime(chrono::NaiveTime),
+    OffsetDateTime(jiff::Timestamp),
+    LocalDateTime(jiff::civil::DateTime),
+    LocalDate(jiff::civil::Date),
+    LocalTime(jiff::civil::Time),
 
     Array(#[validate(length(min = 1, max = 10))] Vec<LiteralValue2>),
     Table(TableValue2),
@@ -413,10 +413,10 @@ enum LiteralValue2 {
     Integer(#[validate(range(min = 1, max = 10))] i64),
     Float(#[validate(range(min = 1, max = 10))] f64),
     String(#[validate(length(min = 1, max = 10))] String),
-    OffsetDateTime(chrono::DateTime<chrono::FixedOffset>),
-    LocalDateTime(chrono::NaiveDateTime),
-    LocalDate(chrono::NaiveDate),
-    LocalTime(chrono::NaiveTime),
+    OffsetDateTime(jiff::Timestamp),
+    LocalDateTime(jiff::civil::DateTime),
+    LocalDate(jiff::civil::Date),
+    LocalTime(jiff::civil::Time),
 }
 
 #[allow(dead_code)]
@@ -432,10 +432,10 @@ struct TableValue {
     #[validate(length(min = 1, max = 10))]
     string: Option<String>,
     array: Option<Vec<LiteralValue2>>,
-    offset_date_time: Option<chrono::DateTime<chrono::FixedOffset>>,
-    local_date_time: Option<chrono::NaiveDateTime>,
-    local_date: Option<chrono::NaiveDate>,
-    local_time: Option<chrono::NaiveTime>,
+    offset_date_time: Option<jiff::Timestamp>,
+    local_date_time: Option<jiff::civil::DateTime>,
+    local_date: Option<jiff::civil::Date>,
+    local_time: Option<jiff::civil::Time>,
     literal: Option<LiteralValue2>,
     table: Option<TableValue2>,
 }
@@ -452,10 +452,10 @@ struct TableValue2 {
     float: Option<f64>,
     #[validate(length(min = 1, max = 10))]
     string: Option<String>,
-    offset_date_time: Option<chrono::DateTime<chrono::FixedOffset>>,
-    local_date_time: Option<chrono::NaiveDateTime>,
-    local_date: Option<chrono::NaiveDate>,
-    local_time: Option<chrono::NaiveTime>,
+    offset_date_time: Option<jiff::Timestamp>,
+    local_date_time: Option<jiff::civil::DateTime>,
+    local_date: Option<jiff::civil::Date>,
+    local_time: Option<jiff::civil::Time>,
 }
 
 #[allow(dead_code)]

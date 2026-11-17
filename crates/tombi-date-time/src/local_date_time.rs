@@ -120,33 +120,6 @@ impl std::fmt::Display for LocalDateTime {
     }
 }
 
-// NOTE: `chrono::DateTime<chrono::Local>` is not enough to represent local date time.
-//       `chrono::Local.from_local_datetime(native_date_time)` cannot uniquely determine the time zone in some cases, so we handle NativeDateTime.
-#[cfg(feature = "chrono")]
-impl From<chrono::NaiveDateTime> for LocalDateTime {
-    fn from(value: chrono::NaiveDateTime) -> Self {
-        use chrono::Datelike;
-        use chrono::Timelike;
-
-        Self::from_ymd_hms_nano(
-            value.year() as u16,
-            value.month() as u8,
-            value.day() as u8,
-            value.hour() as u8,
-            value.minute() as u8,
-            value.second() as u8,
-            value.nanosecond(),
-        )
-    }
-}
-
-#[cfg(feature = "chrono")]
-impl From<chrono::DateTime<chrono::Local>> for LocalDateTime {
-    fn from(value: chrono::DateTime<chrono::Local>) -> Self {
-        value.naive_local().into()
-    }
-}
-
 #[cfg(feature = "serde")]
 impl serde::ser::Serialize for LocalDateTime {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
